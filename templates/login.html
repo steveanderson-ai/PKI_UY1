@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+{% block title %}Connexion — PKI Université de Yaoundé I{% endblock %}
+{% block auth_content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
+
+  :root {
+    --navy:        #03071e;
+    --navy-2:      #07152e;
+    --navy-3:      #0d2046;
+    --cyan:        #00d4ff;
+    --cyan-dim:    #00a8cc;
+    --cyan-glow:   rgba(0, 212, 255, 0.22);
+    --cyan-pale:   rgba(0, 212, 255, 0.06);
+    --gold:        #c9a84c;
+    --gold-dim:    rgba(201, 168, 76, 0.2);
+    --white:       #f0f4ff;
+    --white-dim:   rgba(240, 244, 255, 0.55);
+    --white-faint: rgba(240, 244, 255, 0.08);
+    --danger:      #ff4d6d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── FOND ── */
+  .bg-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 70% at 10% 20%, rgba(0,212,255,0.08) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 60% at 90% 85%, rgba(201,168,76,0.06) 0%, transparent 50%),
+      linear-gradient(160deg, #07152e 0%, #03071e 60%, #050d1e 100%);
+  }
+
+  .grid-overlay {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+    background-size: 50px 50px;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 100%);
+  }
+
+  /* ── LAYOUT SPLIT ── */
+  .auth-split {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 480px;
+  }
+
+  /* ── PANNEAU GAUCHE ── */
+  .panel-left {
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 40px 60px;
+    border-right: 1px solid rgba(0,212,255,0.06);
+    background: rgba(7,21,46,0.3);
+  }
+
+  .panel-logo {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .logo-seal {
+    width: 48px; height: 48px;
+    border: 1.5px solid var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    background: var(--gold-dim);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .logo-seal::after {
+    content: '';
+    position: absolute; inset: -6px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.15);
+  }
+  .logo-text { line-height: 1.25; }
+  .logo-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem; letter-spacing: 0.2em;
+    color: var(--gold); text-transform: uppercase;
+  }
+  .logo-sub {
+    font-size: 0.6rem; letter-spacing: 0.1em;
+    color: var(--white-dim); text-transform: uppercase;
+  }
+
+  .panel-center {
+    flex: 1;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 60px 0;
+  }
+
+  .panel-tagline {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.25em;
+    color: var(--cyan); text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .panel-tagline::before {
+    content: ''; width: 30px; height: 1px;
+    background: var(--cyan); opacity: 0.5;
+  }
+
+  .panel-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 3.5vw, 3.2rem);
+    font-weight: 700; line-height: 1.1;
+    margin-bottom: 24px;
+    color: var(--white);
+  }
+  .panel-heading em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--cyan), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .panel-body {
+    font-size: 0.85rem; line-height: 1.8;
+    color: var(--white-dim); max-width: 400px;
+    margin-bottom: 48px;
+  }
+
+  .panel-stats {
+    display: flex; gap: 36px;
+  }
+  .stat { }
+  .stat-val {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem; font-weight: 600;
+    color: var(--cyan); line-height: 1;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.56rem; letter-spacing: 0.15em;
+    color: var(--white-dim); text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .panel-footer {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.56rem; letter-spacing: 0.12em;
+    color: rgba(240,244,255,0.25);
+  }
+
+  /* ── PANNEAU DROIT (formulaire) ── */
+  .panel-right {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 48px 48px;
+    background: rgba(3,7,30,0.7);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(0,212,255,0.07);
+  }
+
+  .form-header {
+    margin-bottom: 36px;
+  }
+  .form-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.25em;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .form-eyebrow::before { content: '●'; font-size: 0.4rem; animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+  .form-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem; font-weight: 600;
+    color: var(--white);
+  }
+
+  .form-divider {
+    width: 40px; height: 2px;
+    background: linear-gradient(90deg, var(--cyan), transparent);
+    margin: 14px 0;
+  }
+
+  /* Hint admin */
+  .admin-hint {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 6px;
+    background: rgba(201,168,76,0.04);
+    margin-bottom: 28px;
+    font-size: 0.75rem; line-height: 1.6;
+    color: var(--white-dim);
+  }
+  .admin-hint-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .admin-hint strong { color: var(--gold); }
+  .admin-hint code {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--cyan);
+    background: rgba(0,212,255,0.08);
+    padding: 1px 6px; border-radius: 3px;
+  }
+
+  /* Champs */
+  .field { margin-bottom: 20px; }
+  .field-label {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.18em;
+    color: var(--white-dim); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .field-wrap { position: relative; }
+  .field-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 0.9rem; opacity: 0.45; pointer-events: none;
+  }
+
+  .field-input {
+    width: 100%;
+    padding: 13px 14px 13px 40px;
+    background: rgba(7,21,46,0.8);
+    border: 1px solid rgba(0,212,255,0.12);
+    border-radius: 6px;
+    color: var(--white);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem; font-weight: 300;
+    outline: none;
+    transition: all 0.25s;
+  }
+  .field-input::placeholder { color: rgba(240,244,255,0.25); }
+  .field-input:focus {
+    border-color: var(--cyan-dim);
+    background: rgba(0,212,255,0.04);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.08), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  /* Bouton submit */
+  .btn-submit {
+    width: 100%;
+    padding: 14px;
+    margin-top: 8px;
+    background: linear-gradient(135deg, #00d4ff 0%, #0096b4 100%);
+    border: none; border-radius: 6px;
+    color: var(--navy);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem; font-weight: 600;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    position: relative; overflow: hidden;
+    transition: all 0.3s;
+  }
+  .btn-submit::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .btn-submit:hover {
+    box-shadow: 0 0 36px rgba(0,212,255,0.5);
+    transform: translateY(-1px);
+  }
+  .btn-submit:hover::after { opacity: 1; }
+  .btn-submit:active { transform: translateY(0); }
+
+  /* Footer form */
+  .form-footer {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--white-dim);
+  }
+  .form-footer a {
+    color: var(--cyan);
+    text-decoration: none;
+    font-weight: 400;
+    transition: opacity 0.2s;
+  }
+  .form-footer a:hover { opacity: 0.75; }
+
+  .form-sep {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0;
+  }
+  .form-sep-line { flex: 1; height: 1px; background: rgba(0,212,255,0.1); }
+  .form-sep-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.15em;
+    color: rgba(240,244,255,0.25);
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .auth-split { grid-template-columns: 1fr; }
+    .panel-left { display: none; }
+    .panel-right { min-height: 100vh; padding: 40px 28px; }
+  }
+</style>
+
+<div class="bg-canvas"></div>
+<div class="grid-overlay"></div>
+
+<div class="auth-split">
+
+  <!-- Panneau gauche — branding -->
+  <aside class="panel-left">
+    <div class="panel-logo">
+      <div class="logo-seal">🏛️</div>
+      <div class="logo-text">
+        <div class="logo-name">Université de Yaoundé I</div>
+        <div class="logo-sub">Infrastructure à Clés Publiques</div>
+      </div>
+    </div>
+
+    <div class="panel-center">
+      <div class="panel-tagline">Accès sécurisé</div>
+      <h2 class="panel-heading">Votre identité<br>numérique <em>certifiée</em></h2>
+      <p class="panel-body">
+        Connectez-vous à la plateforme officielle de gestion des certificats
+        numériques de l'Université de Yaoundé I. Accédez à vos certificats
+        X.509, gérez vos clés RSA et consultez l'état de révocation en toute sécurité.
+      </p>
+      <div class="panel-stats">
+        <div class="stat">
+          <div class="stat-val">X.509</div>
+          <div class="stat-label">Standard v3</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">2048</div>
+          <div class="stat-label">Bits RSA</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">SHA‑256</div>
+          <div class="stat-label">Algorithme</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-footer">© 2025 Université de Yaoundé I · PKI · INF4268</div>
+  </aside>
+
+  <!-- Panneau droit — formulaire -->
+  <main class="panel-right">
+    <div class="form-header">
+      <div class="form-eyebrow">Authentification</div>
+      <h1 class="form-title">Connexion</h1>
+      <div class="form-divider"></div>
+    </div>
+
+   
+
+    <form method="POST" autocomplete="off">
+      <div class="field">
+        <label class="field-label" for="username">Nom d'utilisateur</label>
+        <div class="field-wrap">
+          <span class="field-icon">👤</span>
+          <input class="field-input" id="username" type="text" name="username"
+                 placeholder="Votre identifiant" required autofocus>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="password">Mot de passe</label>
+        <div class="field-wrap">
+          <span class="field-icon">🔒</span>
+          <input class="field-input" id="password" type="password" name="password"
+                 placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <button class="btn-submit" type="submit">
+        🔓&nbsp; Se connecter
+      </button>
+    </form>
+
+    <div class="form-sep">
+      <div class="form-sep-line"></div>
+      <div class="form-sep-text">ou</div>
+      <div class="form-sep-line"></div>
+    </div>
+
+    <div class="form-footer">
+      Pas encore de compte ?&nbsp; <a href="{{ url_for('register') }}">Créer un compte</a>
+    </div>
+  </main>
+</div>
+
+{% endblock %}

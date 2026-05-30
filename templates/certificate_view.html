@@ -1,0 +1,1327 @@
+{% extends "base.html" %}
+{% block title %}Certificat Numérique — {{ cert.common_name }} — UY1{% endblock %}
+{% block page_title %}Certificat Numérique Officiel{% endblock %}
+
+{% block extra_style %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ════════════════════════════════════════════════
+   CERTIFICAT NUMÉRIQUE — UNIVERSITÉ DE YAOUNDÉ I
+   Design : Diplôme de prestige / Art déco / Or
+════════════════════════════════════════════════ */
+
+:root {
+  --gold-bright:  #f0c040;
+  --gold-mid:     #c9a84c;
+  --gold-deep:    #8a6a1a;
+  --gold-shine:   #fde68a;
+  --parchment:    #0e0c08;
+  --parchment2:   #161208;
+  --parchment3:   #1e1810;
+  --ink:          #e8dfc8;
+  --ink2:         #b8a878;
+  --ink3:         #7a6a48;
+  --seal-green:   #00e096;
+  --seal-red:     #ff3b5c;
+  --border-gold:  rgba(201,168,76,0.4);
+}
+
+/* ── Page background ── */
+.cert-page-bg {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(201,168,76,0.03) 0%, transparent 50%),
+    #0a0804;
+  padding: 20px 0 60px;
+}
+
+/* ── Actions bar (hors du certificat) ── */
+.cert-actions-bar {
+  max-width: 900px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 20px;
+  animation: fadeDown 0.4s ease both;
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cert-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #8a9ab8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background: rgba(255,255,255,0.08);
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,0.18);
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+
+.btn-action-gold {
+  background: linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.08));
+  border-color: rgba(201,168,76,0.4);
+  color: #c9a84c;
+}
+
+.btn-action-gold:hover {
+  background: linear-gradient(135deg, rgba(201,168,76,0.3), rgba(201,168,76,0.15));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(201,168,76,0.2);
+}
+
+.btn-action-verify {
+  background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.05));
+  border-color: rgba(0,212,255,0.3);
+  color: #00d4ff;
+}
+
+.btn-action-verify:hover {
+  background: linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,212,255,0.1));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,212,255,0.15);
+}
+
+.btn-action-pdf {
+  background: linear-gradient(135deg, rgba(167,139,250,0.18), rgba(167,139,250,0.06));
+  border-color: rgba(167,139,250,0.35);
+  color: #a78bfa;
+}
+
+.btn-action-pdf:hover {
+  background: linear-gradient(135deg, rgba(167,139,250,0.28), rgba(167,139,250,0.12));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(167,139,250,0.2);
+}
+
+/* ════════════════════════════════════════════
+   LE CERTIFICAT LUI-MÊME
+════════════════════════════════════════════ */
+
+.certificate-document {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
+  animation: revealCert 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+@keyframes revealCert {
+  from { opacity: 0; transform: translateY(30px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cert-outer {
+  background:
+    radial-gradient(ellipse at 15% 15%, rgba(201,168,76,0.07) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 85%, rgba(201,168,76,0.05) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(201,168,76,0.02) 0%, transparent 70%),
+    linear-gradient(160deg, #161208 0%, #0e0c08 40%, #0a0804 100%);
+  border-radius: 6px;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(201,168,76,0.5),
+    0 0 0 3px rgba(201,168,76,0.12),
+    0 0 0 4px rgba(201,168,76,0.3),
+    0 30px 80px rgba(0,0,0,0.7),
+    0 0 60px rgba(201,168,76,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+
+.cert-outer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.4;
+}
+
+.cert-corner {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.cert-corner svg { width: 100%; height: 100%; }
+
+.cert-corner-tl { top: 12px; left: 12px; }
+.cert-corner-tr { top: 12px; right: 12px; transform: scaleX(-1); }
+.cert-corner-bl { bottom: 12px; left: 12px; transform: scaleY(-1); }
+.cert-corner-br { bottom: 12px; right: 12px; transform: scale(-1); }
+
+.cert-inner-border {
+  margin: 18px;
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 4px;
+  position: relative;
+  z-index: 3;
+  padding: 40px 48px 48px;
+}
+
+.cert-top-line {
+  position: absolute;
+  top: -1px; left: 30px; right: 30px;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(201,168,76,0.3) 15%,
+    rgba(240,192,64,0.8) 40%,
+    rgba(253,230,138,1) 50%,
+    rgba(240,192,64,0.8) 60%,
+    rgba(201,168,76,0.3) 85%,
+    transparent
+  );
+}
+
+.cert-bottom-line {
+  position: absolute;
+  bottom: -1px; left: 30px; right: 30px;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(201,168,76,0.3) 15%,
+    rgba(240,192,64,0.8) 40%,
+    rgba(253,230,138,1) 50%,
+    rgba(240,192,64,0.8) 60%,
+    rgba(201,168,76,0.3) 85%,
+    transparent
+  );
+}
+
+.cert-institution-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+  position: relative;
+}
+
+.cert-country-line {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.35em;
+  color: var(--ink3);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.cert-ministry-line {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--ink2);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.cert-ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0;
+  color: var(--gold-mid);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+}
+
+.cert-ornament-line {
+  flex: 1;
+  max-width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.5), transparent);
+}
+
+.cert-seal-area {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.cert-seal {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cert-seal-ring {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid rgba(201,168,76,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: rotateSeal 20s linear infinite;
+  box-shadow:
+    0 0 0 4px rgba(201,168,76,0.08),
+    0 0 20px rgba(201,168,76,0.1);
+}
+
+@keyframes rotateSeal {
+  from { box-shadow: 0 0 0 4px rgba(201,168,76,0.08), 0 0 20px rgba(201,168,76,0.1), 0 0 0 6px rgba(201,168,76,0.04); }
+  50%  { box-shadow: 0 0 0 4px rgba(201,168,76,0.15), 0 0 30px rgba(201,168,76,0.2), 0 0 0 6px rgba(201,168,76,0.08); }
+  to   { box-shadow: 0 0 0 4px rgba(201,168,76,0.08), 0 0 20px rgba(201,168,76,0.1), 0 0 0 6px rgba(201,168,76,0.04); }
+}
+
+.cert-seal-icon {
+  font-size: 2.2rem;
+  filter: drop-shadow(0 0 8px rgba(201,168,76,0.4));
+}
+
+.cert-seal-ring::before {
+  content: '· · · · · · · · · · · · · · · · · · · · · · · · ·';
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  font-size: 0.4rem;
+  color: rgba(201,168,76,0.3);
+  letter-spacing: 0.05em;
+}
+
+.cert-univ-name-block { text-align: left; }
+
+.cert-univ-name-main {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--gold-bright);
+  line-height: 1.2;
+  text-shadow: 0 0 30px rgba(201,168,76,0.3);
+  letter-spacing: 0.02em;
+}
+
+.cert-univ-name-sub {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--ink3);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.cert-title-block {
+  text-align: center;
+  margin: 28px 0 24px;
+}
+
+.cert-type-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.4em;
+  color: var(--ink3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.cert-main-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: transparent;
+  background: linear-gradient(135deg, #c9a84c 0%, #f0c040 30%, #fde68a 50%, #f0c040 70%, #c9a84c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 8px rgba(201,168,76,0.2));
+}
+
+.cert-subtitle {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  color: var(--ink3);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+.cert-status-band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 20px 0;
+  padding: 12px 24px;
+  border-radius: 6px;
+  position: relative;
+}
+
+.cert-status-band.valid {
+  background: linear-gradient(135deg, rgba(0,224,150,0.06), rgba(0,224,150,0.02));
+  border: 1px solid rgba(0,224,150,0.2);
+}
+
+.cert-status-band.revoked {
+  background: linear-gradient(135deg, rgba(255,59,92,0.08), rgba(255,59,92,0.02));
+  border: 1px solid rgba(255,59,92,0.25);
+}
+
+.cert-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+.valid .cert-status-dot   { background: #00e096; box-shadow: 0 0 8px #00e096; }
+.revoked .cert-status-dot { background: #ff3b5c; box-shadow: 0 0 8px #ff3b5c; animation: none; }
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(1.3); }
+}
+
+.cert-status-text {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.valid .cert-status-text   { color: #00e096; }
+.revoked .cert-status-text { color: #ff3b5c; }
+
+.cert-body { margin: 28px 0; }
+
+.cert-attestation {
+  text-align: center;
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--ink2);
+  line-height: 1.8;
+  margin-bottom: 28px;
+  padding: 0 20px;
+}
+
+.cert-attestation strong {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.cert-holder-block {
+  text-align: center;
+  margin: 32px 0;
+  padding: 28px 20px;
+  position: relative;
+}
+
+.cert-holder-block::before,
+.cert-holder-block::after {
+  content: '';
+  position: absolute;
+  left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.3) 20%, rgba(201,168,76,0.6) 50%, rgba(201,168,76,0.3) 80%, transparent);
+}
+
+.cert-holder-block::before { top: 0; }
+.cert-holder-block::after  { bottom: 0; }
+
+.cert-holder-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.4em;
+  color: var(--ink3);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.cert-holder-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: transparent;
+  background: linear-gradient(135deg, #e8dfc8 0%, #fde68a 40%, #f0c040 60%, #e8dfc8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  filter: drop-shadow(0 2px 12px rgba(201,168,76,0.25));
+  animation: shimmerName 4s ease-in-out infinite;
+}
+
+@keyframes shimmerName {
+  0%, 100% { filter: drop-shadow(0 2px 12px rgba(201,168,76,0.25)); }
+  50%       { filter: drop-shadow(0 2px 20px rgba(201,168,76,0.4)); }
+}
+
+.cert-holder-username {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--ink3);
+  margin-top: 8px;
+  letter-spacing: 0.1em;
+}
+
+.cert-holder-status {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 5px 16px;
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 20px;
+  background: rgba(201,168,76,0.06);
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  color: var(--gold-mid);
+  text-transform: uppercase;
+}
+
+.cert-info-section { margin: 24px 0; }
+
+.cert-section-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  color: var(--gold-deep);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cert-section-title::before,
+.cert-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201,168,76,0.2), transparent);
+}
+
+.cert-section-title::after {
+  background: linear-gradient(270deg, rgba(201,168,76,0.2), transparent);
+}
+
+.cert-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: rgba(201,168,76,0.06);
+  border: 1px solid rgba(201,168,76,0.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cert-field-item {
+  padding: 14px 18px;
+  background: rgba(14,12,8,0.6);
+  transition: background 0.2s;
+}
+
+.cert-field-item:hover { background: rgba(201,168,76,0.04); }
+.cert-field-item.full-width { grid-column: 1 / -1; }
+
+.cert-field-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: var(--ink3);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.cert-field-val {
+  font-family: 'EB Garamond', serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.cert-field-val.mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--gold-mid);
+  word-break: break-all;
+}
+
+.cert-field-val.small {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--ink3);
+  word-break: break-all;
+  line-height: 1.7;
+}
+
+.cert-validity-section { margin: 28px 0; }
+
+.cert-validity-track {
+  position: relative;
+  height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  margin: 16px 0 10px;
+  overflow: visible;
+}
+
+.cert-validity-fill {
+  height: 100%;
+  border-radius: 3px;
+  position: relative;
+  transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+  background: linear-gradient(90deg, #c9a84c, #f0c040, #fde68a);
+  box-shadow: 0 0 10px rgba(201,168,76,0.4);
+}
+
+.cert-validity-cursor {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #f0c040;
+  border-radius: 50%;
+  border: 2px solid #0e0c08;
+  box-shadow: 0 0 10px rgba(240,192,64,0.6);
+  z-index: 2;
+}
+
+.cert-validity-dates {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--ink3);
+  margin-top: 6px;
+}
+
+.cert-days-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  margin-top: 12px;
+}
+
+.cert-days-badge.active {
+  background: rgba(0,224,150,0.08);
+  border: 1px solid rgba(0,224,150,0.2);
+  color: #00e096;
+}
+
+.cert-days-badge.expiring {
+  background: rgba(251,146,60,0.08);
+  border: 1px solid rgba(251,146,60,0.25);
+  color: #fb923c;
+}
+
+.cert-days-badge.expired,
+.cert-days-badge.revoked-badge {
+  background: rgba(255,59,92,0.08);
+  border: 1px solid rgba(255,59,92,0.2);
+  color: #ff3b5c;
+}
+
+.cert-crypto-section { margin: 24px 0; }
+
+.cert-fingerprint-box {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(201,168,76,0.1);
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--ink3);
+  word-break: break-all;
+  line-height: 2;
+  letter-spacing: 0.08em;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cert-fingerprint-box:hover {
+  border-color: rgba(201,168,76,0.25);
+  color: var(--gold-mid);
+  background: rgba(0,0,0,0.5);
+}
+
+.cert-fingerprint-box::after {
+  content: '📋 Copier';
+  position: absolute;
+  top: 8px; right: 10px;
+  font-size: 0.55rem;
+  color: var(--ink3);
+  background: rgba(0,0,0,0.6);
+  padding: 3px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.cert-fingerprint-box:hover::after { opacity: 1; }
+
+.cert-algo-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.cert-algo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(201,168,76,0.06);
+  border: 1px solid rgba(201,168,76,0.18);
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--gold-mid);
+  letter-spacing: 0.08em;
+}
+
+.cert-extensions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cert-ext-card {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 14px 16px;
+  transition: border-color 0.2s;
+}
+
+.cert-ext-card:hover { border-color: rgba(201,168,76,0.2); }
+
+.cert-ext-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  color: var(--gold-mid);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.cert-ext-val {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.95rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.cert-ext-critical {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  background: rgba(251,146,60,0.1);
+  border: 1px solid rgba(251,146,60,0.2);
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.52rem;
+  color: #fb923c;
+  letter-spacing: 0.1em;
+}
+
+.cert-footer {
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(201,168,76,0.15);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 20px;
+  align-items: end;
+}
+
+.cert-footer-left  { text-align: left; }
+.cert-footer-center{ text-align: center; }
+.cert-footer-right { text-align: right; }
+
+.cert-issued-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--ink3);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.cert-issued-val {
+  font-family: 'EB Garamond', serif;
+  font-size: 1rem;
+  color: var(--ink2);
+}
+
+.cert-seal-footer {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px solid rgba(201,168,76,0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(201,168,76,0.08), transparent);
+  box-shadow: 0 0 0 4px rgba(201,168,76,0.08), 0 0 20px rgba(201,168,76,0.12);
+  animation: glowSeal 3s ease-in-out infinite;
+}
+
+@keyframes glowSeal {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(201,168,76,0.08), 0 0 20px rgba(201,168,76,0.12); }
+  50%       { box-shadow: 0 0 0 4px rgba(201,168,76,0.15), 0 0 30px rgba(201,168,76,0.22); }
+}
+
+.cert-seal-footer-icon { font-size: 1.8rem; }
+
+.cert-seal-footer-text {
+  font-family: 'Cinzel', serif;
+  font-size: 0.4rem;
+  letter-spacing: 0.15em;
+  color: var(--gold-mid);
+  text-transform: uppercase;
+  margin-top: 4px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.cert-signature-line {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent);
+  margin-bottom: 8px;
+}
+
+.cert-signature-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--ink2);
+  text-transform: uppercase;
+}
+
+.cert-signature-title {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--ink3);
+  margin-top: 3px;
+}
+
+.cert-serial-footer {
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.cert-serial-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  color: var(--ink3);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.cert-serial-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--gold-mid);
+  letter-spacing: 0.2em;
+}
+
+.cert-revoked-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-family: 'Cinzel', serif;
+  font-size: 6rem;
+  font-weight: 900;
+  color: rgba(255,59,92,0.06);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 2;
+  white-space: nowrap;
+  user-select: none;
+}
+
+@media print {
+  .cert-actions-bar { display: none !important; }
+  .cert-page-bg { background: white !important; padding: 0 !important; }
+  .cert-outer { box-shadow: none !important; border: 2px solid #c9a84c !important; }
+}
+
+@media (max-width: 700px) {
+  .cert-main-title      { font-size: 1.3rem; }
+  .cert-holder-name     { font-size: 1.6rem; }
+  .cert-fields-grid     { grid-template-columns: 1fr; }
+  .cert-extensions-grid { grid-template-columns: 1fr; }
+  .cert-footer          { grid-template-columns: 1fr; text-align: center; }
+  .cert-inner-border    { padding: 24px 20px 32px; }
+  .cert-univ-name-main  { font-size: 1rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cert-page-bg">
+
+  <!-- ══ BARRE D'ACTIONS ══ -->
+  <div class="cert-actions-bar">
+    <div class="cert-actions-left">
+      <a href="{{ url_for('certificates') }}" class="btn-back">← Retour aux certificats</a>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:#3a4a6a;">
+        CERT / {{ cert.serial_hex }}
+      </span>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      {% if current_user.is_admin() %}
+      <a href="{{ url_for('verify') }}?q={{ cert.serial_hex }}"
+         class="btn-action btn-action-verify">
+        🔍 Vérifier
+      </a>
+      {% endif %}
+      <a href="{{ url_for('download_cert', cert_id=cert.id) }}"
+         class="btn-action btn-action-gold">
+        ⬇ Télécharger .pem
+      </a>
+      <!-- ══ BOUTON PDF — LIGNE 71 REMPLACÉE ══ -->
+      <a href="{{ url_for('print_certificate', cert_id=cert.id) }}"
+         target="_blank"
+         class="btn-action btn-action-pdf">
+        🖨 Télécharger / Imprimer PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- ══ LE CERTIFICAT ══ -->
+  <div class="certificate-document">
+    <div class="cert-outer">
+
+      {% if cert.status == 'REVOKED' %}
+      <div class="cert-revoked-watermark">RÉVOQUÉ</div>
+      {% endif %}
+
+      <div class="cert-corner cert-corner-tl">
+        <svg viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 65 L5 10 Q5 5 10 5 L65 5" stroke="rgba(201,168,76,0.6)" stroke-width="1.5" fill="none"/>
+          <path d="M15 55 L15 18 Q15 15 18 15 L55 15" stroke="rgba(201,168,76,0.25)" stroke-width="1" fill="none"/>
+          <circle cx="5" cy="5" r="3" fill="rgba(201,168,76,0.5)"/>
+          <circle cx="5" cy="5" r="1.5" fill="rgba(240,192,64,0.8)"/>
+          <path d="M5 25 L5 5 L25 5" stroke="rgba(201,168,76,0.8)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="cert-corner cert-corner-tr">
+        <svg viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 65 L5 10 Q5 5 10 5 L65 5" stroke="rgba(201,168,76,0.6)" stroke-width="1.5" fill="none"/>
+          <path d="M15 55 L15 18 Q15 15 18 15 L55 15" stroke="rgba(201,168,76,0.25)" stroke-width="1" fill="none"/>
+          <circle cx="5" cy="5" r="3" fill="rgba(201,168,76,0.5)"/>
+          <circle cx="5" cy="5" r="1.5" fill="rgba(240,192,64,0.8)"/>
+          <path d="M5 25 L5 5 L25 5" stroke="rgba(201,168,76,0.8)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="cert-corner cert-corner-bl">
+        <svg viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 65 L5 10 Q5 5 10 5 L65 5" stroke="rgba(201,168,76,0.6)" stroke-width="1.5" fill="none"/>
+          <path d="M15 55 L15 18 Q15 15 18 15 L55 15" stroke="rgba(201,168,76,0.25)" stroke-width="1" fill="none"/>
+          <circle cx="5" cy="5" r="3" fill="rgba(201,168,76,0.5)"/>
+          <circle cx="5" cy="5" r="1.5" fill="rgba(240,192,64,0.8)"/>
+          <path d="M5 25 L5 5 L25 5" stroke="rgba(201,168,76,0.8)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="cert-corner cert-corner-br">
+        <svg viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 65 L5 10 Q5 5 10 5 L65 5" stroke="rgba(201,168,76,0.6)" stroke-width="1.5" fill="none"/>
+          <path d="M15 55 L15 18 Q15 15 18 15 L55 15" stroke="rgba(201,168,76,0.25)" stroke-width="1" fill="none"/>
+          <circle cx="5" cy="5" r="3" fill="rgba(201,168,76,0.5)"/>
+          <circle cx="5" cy="5" r="1.5" fill="rgba(240,192,64,0.8)"/>
+          <path d="M5 25 L5 5 L25 5" stroke="rgba(201,168,76,0.8)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div class="cert-inner-border">
+        <div class="cert-top-line"></div>
+        <div class="cert-bottom-line"></div>
+
+        <!-- EN-TÊTE -->
+        <div class="cert-institution-header">
+          <div class="cert-country-line">République du Cameroun · Republic of Cameroon</div>
+          <div class="cert-ministry-line">Ministère de l'Enseignement Supérieur</div>
+          <div class="cert-seal-area">
+            <div class="cert-seal">
+              <div class="cert-seal-ring">
+                <div class="cert-seal-icon">🏛️</div>
+              </div>
+            </div>
+            <div class="cert-univ-name-block">
+              <div class="cert-univ-name-main">Université de Yaoundé I</div>
+              <div class="cert-univ-name-sub">Infrastructure à Clés Publiques · INF4268</div>
+              <div class="cert-univ-name-sub" style="margin-top:2px; font-size:0.55rem;">
+                Master 1 Sécurité des Systèmes Informatiques
+              </div>
+            </div>
+          </div>
+          <div class="cert-ornament">
+            <div class="cert-ornament-line"></div>
+            ✦ &nbsp; ✦ &nbsp; ✦
+            <div class="cert-ornament-line"></div>
+          </div>
+        </div>
+
+        <!-- TITRE -->
+        <div class="cert-title-block">
+          <div class="cert-type-label">Infrastructure à Clés Publiques · X.509 v3</div>
+          <div class="cert-main-title">CERTIFICAT NUMÉRIQUE</div>
+          <div class="cert-subtitle">Certificat d'Identité Numérique Officiel</div>
+        </div>
+
+        <!-- STATUT -->
+        <div class="cert-status-band {% if cert.status == 'VALID' %}valid{% else %}revoked{% endif %}">
+          <div class="cert-status-dot"></div>
+          <div class="cert-status-text">
+            {% if cert.status == 'VALID' %}● CERTIFICAT VALIDE ET ACTIF
+            {% elif cert.status == 'REVOKED' %}● CERTIFICAT RÉVOQUÉ — {{ cert.revoke_reason or '' }}
+            {% else %}● CERTIFICAT EXPIRÉ{% endif %}
+          </div>
+          <div class="cert-status-dot"></div>
+        </div>
+
+        <!-- CORPS -->
+        <div class="cert-body">
+          <div class="cert-attestation">
+            L'<strong>Université de Yaoundé I</strong>, Autorité de Certification officielle,
+            atteste par la présente que le présent certificat numérique a été émis et signé
+            cryptographiquement au bénéfice de
+          </div>
+
+          <!-- NOM DU TITULAIRE -->
+          <div class="cert-holder-block">
+            <div class="cert-holder-label">Titulaire du certificat</div>
+            <div class="cert-holder-name">{{ cert.common_name }}</div>
+            {% if cert.owner and cert.owner.username %}
+            <div class="cert-holder-username">@{{ cert.owner.username }}</div>
+            {% endif %}
+            <div class="cert-holder-status">
+              {% if cert.status_type == 'etudiant' %}🎓 Étudiant
+              {% elif cert.status_type == 'enseignant' %}👨‍🏫 Enseignant
+              {% else %}👔 Personnel administratif{% endif %}
+              · {{ cert.department or 'Université de Yaoundé I' }}
+            </div>
+          </div>
+
+          <!-- SUJET -->
+          <div class="cert-info-section">
+            <div class="cert-section-title">Identité du Titulaire (Subject)</div>
+            <div class="cert-fields-grid">
+              <div class="cert-field-item">
+                <div class="cert-field-key">CN — Nom Commun</div>
+                <div class="cert-field-val">{{ cert.common_name }}</div>
+              </div>
+              <div class="cert-field-item">
+                <div class="cert-field-key">O — Organisation</div>
+                <div class="cert-field-val">{{ cert.organisation or 'Université de Yaoundé I' }}</div>
+              </div>
+              {% if cert.department %}
+              <div class="cert-field-item">
+                <div class="cert-field-key">OU — Département / Unité</div>
+                <div class="cert-field-val">{{ cert.department }}</div>
+              </div>
+              {% endif %}
+              <div class="cert-field-item">
+                <div class="cert-field-key">C — Pays</div>
+                <div class="cert-field-val">CM · Cameroun 🇨🇲</div>
+              </div>
+              {% if cert.email %}
+              <div class="cert-field-item full-width">
+                <div class="cert-field-key">EMAIL — Adresse Électronique</div>
+                <div class="cert-field-val">{{ cert.email }}</div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- ÉMETTEUR -->
+          <div class="cert-info-section" style="margin-top: 20px;">
+            <div class="cert-section-title">Autorité Émettrice (Issuer)</div>
+            <div class="cert-fields-grid">
+              <div class="cert-field-item">
+                <div class="cert-field-key">CN — Nom Commun</div>
+                <div class="cert-field-val">Université de Yaoundé I</div>
+              </div>
+              <div class="cert-field-item">
+                <div class="cert-field-key">O — Organisation</div>
+                <div class="cert-field-val">Université de Yaoundé I</div>
+              </div>
+              <div class="cert-field-item">
+                <div class="cert-field-key">OU — Département</div>
+                <div class="cert-field-val">{{ ca.department if ca else "Département d'Informatique" }}</div>
+              </div>
+              <div class="cert-field-item">
+                <div class="cert-field-key">L / ST — Localité</div>
+                <div class="cert-field-val">Yaoundé · Centre · CM</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VALIDITÉ -->
+          <div class="cert-validity-section" style="margin-top: 28px;">
+            <div class="cert-section-title">Période de Validité</div>
+            <div class="cert-fields-grid" style="margin-bottom: 16px;">
+              <div class="cert-field-item">
+                <div class="cert-field-key">Not Valid Before</div>
+                <div class="cert-field-val">{{ cert.issued_at.strftime('%d %B %Y à %H:%M UTC') }}</div>
+              </div>
+              <div class="cert-field-item">
+                <div class="cert-field-key">Not Valid After</div>
+                <div class="cert-field-val">
+                  {% if cert.expires_at %}{{ cert.expires_at.strftime('%d %B %Y à %H:%M UTC') }}
+                  {% else %}—{% endif %}
+                </div>
+              </div>
+            </div>
+
+            {% if cert.expires_at %}
+            {% set total_days = (cert.expires_at - cert.issued_at).days %}
+            {% set days_left  = cert.days_until_expiry() %}
+            {% set pct = [[(days_left * 100 // total_days), 0]|max, 100]|min if total_days > 0 else 0 %}
+            <div class="cert-validity-track" id="validityTrack">
+              <div class="cert-validity-fill" id="validityFill" style="width:0%;" data-pct="{{ pct }}"></div>
+              <div class="cert-validity-cursor" id="validityCursor" style="left:0%;"></div>
+            </div>
+            <div class="cert-validity-dates">
+              <span>{{ cert.issued_at.strftime('%d/%m/%Y') }}</span>
+              <span style="color:var(--gold-mid); font-weight:500;">Aujourd'hui</span>
+              <span>{{ cert.expires_at.strftime('%d/%m/%Y') }}</span>
+            </div>
+            <div>
+              {% if cert.status == 'REVOKED' %}
+              <div class="cert-days-badge revoked-badge">
+                🚫 Révoqué le {{ cert.revoked_at.strftime('%d/%m/%Y') if cert.revoked_at else '—' }}
+                · Motif : {{ cert.revoke_reason or 'Non spécifié' }}
+              </div>
+              {% elif days_left is not none and days_left < 0 %}
+              <div class="cert-days-badge expired">⚠ Certificat expiré depuis {{ (days_left * -1) }} jour(s)</div>
+              {% elif days_left is not none and days_left < 30 %}
+              <div class="cert-days-badge expiring">⏳ Expire dans {{ days_left }} jour(s)</div>
+              {% elif days_left is not none %}
+              <div class="cert-days-badge active">✓ Actif · {{ days_left }} jour(s) restant(s) sur {{ total_days }}</div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- CRYPTOGRAPHIE -->
+          <div class="cert-crypto-section" style="margin-top: 28px;">
+            <div class="cert-section-title">Données Cryptographiques</div>
+            <div class="cert-fields-grid" style="margin-bottom: 14px;">
+              <div class="cert-field-item">
+                <div class="cert-field-key">Version X.509</div>
+                <div class="cert-field-val">Version 3</div>
+              </div>
+              <div class="cert-field-item">
+                <div class="cert-field-key">Algorithme de Signature</div>
+                <div class="cert-field-val">SHA-256 with RSA Encryption</div>
+              </div>
+              <div class="cert-field-item">
+                <div class="cert-field-key">Numéro de Série (DEC)</div>
+                <div class="cert-field-val mono">{{ cert.serial_int }}</div>
+              </div>
+              <div class="cert-field-item">
+                <div class="cert-field-key">Numéro de Série (HEX)</div>
+                <div class="cert-field-val mono">{{ cert.serial_hex }}</div>
+              </div>
+            </div>
+            <div class="cert-algo-pills">
+              <div class="cert-algo-pill">🔐 RSA-2048</div>
+              <div class="cert-algo-pill"># SHA-256</div>
+              <div class="cert-algo-pill">📜 X.509 v3</div>
+              <div class="cert-algo-pill">🔑 PKCS#1 v1.5</div>
+              <div class="cert-algo-pill">📋 RFC 5280</div>
+            </div>
+            {% if ca and ca.fingerprint %}
+            <div style="margin-top: 14px;">
+              <div class="cert-field-key" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:0.55rem; color:var(--ink3); letter-spacing:0.15em; text-transform:uppercase;">
+                Empreinte CA — SHA-256
+              </div>
+              <div class="cert-fingerprint-box"
+                   onclick="copyFP('{{ ca.fingerprint }}')"
+                   title="Cliquer pour copier">
+                {{ ca.fingerprint }}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- EXTENSIONS -->
+          <div style="margin-top: 28px;">
+            <div class="cert-section-title">Extensions X.509 v3</div>
+            <div class="cert-extensions-grid">
+              <div class="cert-ext-card">
+                <div class="cert-ext-name">Basic Constraints</div>
+                <div class="cert-ext-val">Certificate Authority : Non<br>Certificat utilisateur final</div>
+                <div class="cert-ext-critical">⚠ CRITIQUE</div>
+              </div>
+              <div class="cert-ext-card">
+                <div class="cert-ext-name">Key Usage</div>
+                <div class="cert-ext-val">Signature numérique<br>Non-répudiation<br>Chiffrement de clé</div>
+                <div class="cert-ext-critical">⚠ CRITIQUE</div>
+              </div>
+              <div class="cert-ext-card">
+                <div class="cert-ext-name">Clé Publique</div>
+                <div class="cert-ext-val">RSA 2048 bits<br>Exposant public : 65537</div>
+              </div>
+              <div class="cert-ext-card">
+                <div class="cert-ext-name">CRL Distribution</div>
+                <div class="cert-ext-val">
+                  <a href="{{ url_for('download_crl') }}"
+                     style="color:var(--gold-mid); text-decoration:none; font-size:0.8rem;">
+                    📋 Télécharger la CRL
+                  </a><br>
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--ink3);">
+                    Vérification de révocation
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PIED -->
+          <div class="cert-footer">
+            <div class="cert-footer-left">
+              <div class="cert-issued-label">Émis le</div>
+              <div class="cert-issued-val">{{ cert.issued_at.strftime('%d %B %Y') }}</div>
+              <div style="margin-top:8px;">
+                <div class="cert-issued-label">Référence</div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--gold-mid);">
+                  UY1-PKI-{{ cert.serial_hex }}
+                </div>
+              </div>
+            </div>
+            <div class="cert-footer-center">
+              <div class="cert-seal-footer">
+                <div class="cert-seal-footer-icon">🏛️</div>
+                <div class="cert-seal-footer-text">SCEAU<br>OFFICIEL<br>UY1</div>
+              </div>
+            </div>
+            <div class="cert-footer-right">
+              <div class="cert-signature-line"></div>
+              <div class="cert-signature-name">{{ ca.name if ca else 'Université de Yaoundé I' }}</div>
+              <div class="cert-signature-title">Autorité de Certification Racine</div>
+              <div style="margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:0.55rem; color:var(--ink3);">
+                Signature RSA-2048 / SHA-256
+              </div>
+            </div>
+          </div>
+
+          <!-- NUMÉRO DE SÉRIE -->
+          <div class="cert-serial-footer">
+            <div class="cert-serial-label">Identifiant Unique du Certificat</div>
+            <div class="cert-serial-val">{{ cert.serial_hex }}</div>
+            <div style="margin-top:6px; font-family:'JetBrains Mono',monospace; font-size:0.52rem; color:var(--ink3); letter-spacing:0.1em;">
+              Ce certificat est émis conformément aux standards RFC 5280 · ITU-T X.509 v3
+            </div>
+          </div>
+
+        </div><!-- /cert-body -->
+      </div><!-- /cert-inner-border -->
+    </div><!-- /cert-outer -->
+  </div><!-- /certificate-document -->
+
+</div><!-- /cert-page-bg -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  const fill   = document.getElementById('validityFill');
+  const cursor = document.getElementById('validityCursor');
+
+  if (fill) {
+    const pct = parseFloat(fill.dataset.pct) || 0;
+    setTimeout(() => {
+      fill.style.width = pct + '%';
+      if (cursor) cursor.style.left = pct + '%';
+    }, 600);
+  }
+
+  window.copyFP = function(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Empreinte copiée dans le presse-papier', 'success');
+    });
+  };
+
+  const fields = document.querySelectorAll('.cert-field-item, .cert-ext-card');
+  fields.forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+    el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+    setTimeout(() => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, 300 + i * 40);
+  });
+
+});
+</script>
+{% endblock %}

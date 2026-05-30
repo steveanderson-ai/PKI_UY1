@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Audit — Université de Yaoundé I{% endblock %}
+{% block page_title %}Journal d'audit{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <span class="dot dot-cyan"></span>
+      TRACE DES OPÉRATIONS
+    </div>
+  </div>
+  <div class="card-body">
+    {% if logs %}
+    <div class="audit-timeline">
+      {% for log in logs %}
+      <div class="audit-item">
+        <div class="audit-dot" style="background: {{ log.color }}20; color: {{ log.color }};">
+          {{ log.icon }}
+        </div>
+        <div class="audit-content">
+          <div class="audit-title">{{ log.title }}</div>
+          <div class="audit-detail">{{ log.details }}</div>
+          <div class="audit-meta">
+            <span>👤 {{ log.username }}</span>
+            <span>🕐 {{ log.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</span>
+            <span>📌 {{ log.action }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 60px;">
+      <div style="font-size: 4rem; margin-bottom: 16px;">📝</div>
+      <h3 style="color: var(--text2);">Aucun log d'audit</h3>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

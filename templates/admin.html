@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Administration — PKI{% endblock %}
+{% block page_title %}Administration CA{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+<!-- CRÉER L'AC -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><span class="dot"></span> Autorité de Certification</div>
+    {% if ca %}<span class="badge badge-valid">ACTIVE</span>{% endif %}
+  </div>
+  {% if ca %}
+  <div style="padding:16px;background:var(--bg);border-radius:8px;margin-bottom:16px;">
+    <div style="font-size:0.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:4px;">NOM</div>
+    <div style="font-weight:800;color:var(--gold);margin-bottom:12px;">{{ ca.name }}</div>
+    <div style="font-size:0.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:4px;">ORGANISATION</div>
+    <div style="margin-bottom:12px;">{{ ca.organisation }}</div>
+    <div style="font-size:0.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:4px;">VALIDE JUSQU'AU</div>
+    <div>{{ ca.valid_until.strftime('%d/%m/%Y') if ca.valid_until else '—' }}</div>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <a href="/api/ca-cert.pem" class="btn btn-outline btn-sm">⬇ CA Cert</a>
+    <a href="/api/crl.pem" class="btn btn-outline btn-sm">⬇ CRL</a>
+  </div>
+  {% else %}
+  <form method="POST" action="{{ url_for('create_ca') }}">
+    <div class="form-group">
+      <label class="form-label">Nom de l'AC</label>
+      <input class="form-control" type="text" name="ca_name" value="AC-Master-INF4268" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Pays (code ISO)</label>
+      <input class="form-control" type="text" name="ca_country" value="CM" maxlength="2" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Organisation</label>
+      <input class="form-control" type="text" name="ca_org" value="Université de Yaoundé I" required>
+    </div>
+    <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center;">
+      🏛 Initialiser l'AC Racine
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<!-- BENCHMARK -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><span class="dot" style="background:var(--cyan);"></span> Benchmark cryptographique</div>
+  </div>
+  {% if bench %}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+    <div style="background:var(--bg);padding:14px;border-radius:8px;">
+      <div class="text-muted mono" style="font-size:0.68rem;margin-bottom:4px;">TAILLE CLÉ</div>
+      <div class="text-cyan" style="font-size:1.3rem;font-weight:800;">RSA-{{ bench.key_size }}</div>
+    </div>
+    <div style="background:var(--bg);padding:14px;border-radius:8px;">
+      <div class="text-muted mono" style="font-size:0.68rem;margin-bottom:4px;">MOYENNE</div>
+      <div class="text-gold" style="font-size:1.3rem;font-weight:800;">{{ bench.avg_ms }} ms</div>
+    </div>
+    <div style="background:var(--bg);padding:14px;border-radius:8px;">
+      <div class="text-muted mono" style="font-size:0.68rem;margin-bottom:4px;">MIN</div>
+      <div style="font-size:1.1rem;font-weight:700;">{{ bench.min_ms }} ms</div>
+    </div>
+    <div style="background:var(--bg);padding:14px;border-radius:8px;">
+      <div class="text-muted mono" style="font-size:0.68rem;margin-bottom:4px;">MAX</div>
+      <div style="font-size:1.1rem;font-weight:700;">{{ bench.max_ms }} ms</div>
+    </div>
+  </div>
+  <div class="mono text-muted" style="font-size:0.72rem;">{{ bench.runs }} itérations · Génération clé RSA</div>
+  {% endif %}
+</div>
+
+<!-- UTILISATEURS -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><span class="dot" style="background:var(--green);"></span> Utilisateurs</div>
+    <span class="mono text-muted" style="font-size:0.78rem;">{{ users|length }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Inscrit le</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-weight:700;">{{ u.username }}</td>
+          <td class="mono text-muted" style="font-size:0.78rem;">{{ u.email }}</td>
+          <td>
+            {% if u.role == 'admin' %}
+            <span class="badge badge-admin">ADMIN</span>
+            {% else %}
+            <span class="badge badge-user">USER</span>
+            {% endif %}
+          </td>
+          <td class="mono text-muted" style="font-size:0.78rem;">{{ u.created_at.strftime('%d/%m/%Y') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CRL -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title"><span class="dot" style="background:var(--red);"></span> Certificats révoqués (CRL)</div>
+  </div>
+  {% if crl_entries %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Série</th><th>Raison</th><th>Date révocation</th></tr></thead>
+      <tbody>
+        {% for e in crl_entries %}
+        <tr>
+          <td class="mono text-red">#{{ e.serial_number }}</td>
+          <td class="text-muted">{{ e.reason }}</td>
+          <td class="mono text-muted" style="font-size:0.78rem;">{{ e.revoked_at.strftime('%d/%m/%Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-muted" style="text-align:center;padding:20px;font-size:0.85rem;">
+    Aucun certificat révoqué pour l'instant.
+  </div>
+  {% endif %}
+</div>
+
+</div>
+{% endblock %}

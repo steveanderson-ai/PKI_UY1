@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Configuration AC — Université de Yaoundé I{% endblock %}
+{% block page_title %}Autorité de Certification{% endblock %}
+
+{% block content %}
+{% if not ca %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <span class="dot dot-gold"></span>
+      CONFIGURATION DE L'AUTORITÉ DE CERTIFICATION
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="alert alert-info" style="margin-bottom: 24px;">
+      🏛️ <strong>Configuration initiale</strong><br>
+      L'Université de Yaoundé I doit créer son Autorité de Certification. Les informations suivantes seront inscrites dans le certificat racine de l'Université.
+    </div>
+
+    <form method="POST" action="{{ url_for('create_ca') }}">
+      <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h4 style="color: var(--cyan); margin-bottom: 16px;">🏛️ INFORMATIONS DE L'UNIVERSITÉ</h4>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Nom de l'AC</label>
+            <input type="text" name="ca_name" class="form-control" value="Université de Yaoundé I" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pays</label>
+            <input type="text" name="ca_country" class="form-control" value="CM" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ville</label>
+            <input type="text" name="ca_city" class="form-control" value="Yaoundé" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Organisation</label>
+            <input type="text" name="ca_org" class="form-control" value="Université de Yaoundé I" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Département</label>
+            <input type="text" name="ca_dept" class="form-control" value="Département d'Informatique">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unité</label>
+            <input type="text" name="ca_unit" class="form-control" value="INF4268 - Master 1 SSI">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email de contact</label>
+            <input type="email" name="ca_email" class="form-control" value="contact@uy1.cm">
+          </div>
+        </div>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h4 style="color: var(--cyan); margin-bottom: 16px;">⚙️ PARAMÈTRES CRYPTOGRAPHIQUES</h4>
+        <div class="info-row">
+          <div class="info-item">
+            <div class="info-item-label">Algorithme</div>
+            <div class="info-item-value">RSA-2048</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Hachage</div>
+            <div class="info-item-value">SHA-256</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Validité</div>
+            <div class="info-item-value">10 ans</div>
+          </div>
+          <div class="info-item">
+            <div class="info-item-label">Version X.509</div>
+            <div class="info-item-value">v3</div>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-gold btn-full btn-lg">🏛 CRÉER L'AUTORITÉ DE CERTIFICATION DE L'UNIVERSITÉ</button>
+    </form>
+  </div>
+</div>
+
+{% else %}
+<!-- AC déjà existante -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="dot dot-gold"></span>
+        CERTIFICAT DE L'UNIVERSITÉ
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="ca-panel">
+        <div class="ca-visual">
+          <div class="ca-shield">🏛️</div>
+        </div>
+        <div class="ca-details">
+          <div class="ca-field">
+            <div class="ca-field-label">🔖 IDENTITY</div>
+            <div class="ca-field-value">{{ ca.name }}</div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">📍 Pays / Ville</div>
+            <div class="ca-field-value">{{ ca.country }} / {{ ca.city }}</div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">🏢 Organisation</div>
+            <div class="ca-field-value">{{ ca.organisation }}</div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">📧 Contact</div>
+            <div class="ca-field-value">{{ ca.email }}</div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">🔐 Algorithme</div>
+            <div class="ca-field-value">{{ ca.algorithm }}</div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">📅 Valide jusqu'au</div>
+            <div class="ca-field-value">{{ ca.valid_until.strftime('%d/%m/%Y') if ca.valid_until else '-' }}</div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">🔑 Empreinte SHA-256</div>
+            <div class="ca-fingerprint">{{ ca.fingerprint }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="dot dot-cyan"></span>
+        ACTIONS
+      </div>
+    </div>
+    <div class="card-body">
+      <a href="{{ url_for('download_ca_cert') }}" class="btn btn-gold btn-full" style="margin-bottom: 12px;">
+        ⬇️ TÉLÉCHARGER LE CERTIFICAT DE L'UNIVERSITÉ
+      </a>
+      <a href="{{ url_for('download_crl') }}" class="btn btn-outline btn-full">
+        📋 TÉLÉCHARGER LA CRL
+      </a>
+      <a href="{{ url_for('print_ca') }}"
+         target="_blank"
+         class="btn btn-outline btn-full"
+         style="margin-top: 12px; border-color:rgba(201,168,76,0.4); color:#c9a84c;">
+        🖨️ CERTIFICAT CA EN PDF OFFICIEL
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <span class="dot dot-purple"></span>
+      PERFORMANCES CRYPTOGRAPHIQUES
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="info-row">
+      <div class="info-item">
+        <div class="info-item-label">Génération clé RSA-2048</div>
+        <div class="info-item-value">{{ bench.avg_ms if bench else '0' }} ms (moyenne sur {{ bench.runs if bench else 3 }} essais)</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

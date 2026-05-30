@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Liste de Révocation — Université de Yaoundé I{% endblock %}
+{% block page_title %}Liste de Révocation des Certificats (CRL){% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <span class="dot dot-red"></span>
+      CERTIFICATS RÉVOQUÉS ({{ crl_entries|length }})
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <!-- Bouton PDF officiel -->
+      <a href="{{ url_for('print_crl') }}"
+         target="_blank"
+         class="btn btn-sm"
+         style="background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.06));
+                border:1px solid rgba(201,168,76,0.35); color:#c9a84c;
+                font-family:'JetBrains Mono',monospace; font-size:0.62rem;
+                padding:6px 12px; border-radius:8px; text-decoration:none;
+                display:inline-flex; align-items:center; gap:5px;"
+         title="Voir et télécharger la CRL en PDF officiel">
+        🖨 PDF Officiel
+      </a>
+      <!-- Bouton texte lisible -->
+      <a href="{{ url_for('download_crl_txt') }}"
+         class="btn btn-sm"
+         style="background:rgba(0,212,255,0.08); border:1px solid rgba(0,212,255,0.25);
+                color:#00d4ff; font-family:'JetBrains Mono',monospace; font-size:0.62rem;
+                padding:6px 12px; border-radius:8px; text-decoration:none;
+                display:inline-flex; align-items:center; gap:5px;"
+         title="Télécharger la CRL en texte lisible">
+        📄 Texte lisible
+      </a>
+      <!-- Bouton PEM technique -->
+      <a href="{{ url_for('download_crl') }}"
+         class="btn btn-outline btn-sm"
+         title="Télécharger la CRL au format PEM (usage OpenSSL)"
+         style="font-family:'JetBrains Mono',monospace; font-size:0.62rem;
+                padding:6px 12px; border-radius:8px; display:inline-flex;
+                align-items:center; gap:5px;">
+        🔐 PEM (OpenSSL)
+      </a>
+    </div>
+  </div>
+  <div class="card-body">
+    {% if crl_entries %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Certificat</th>
+            <th>Série</th>
+            <th>Motif</th>
+            <th>Date de révocation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in crl_entries %}
+          <tr>
+            <td><strong>{{ entry.cert_cn }}</strong></td>
+            <td class="mono">{{ entry.serial_hex }}</td>
+            <td><span class="badge badge-revoked">{{ entry.reason_label }}</span></td>
+            <td>{{ entry.revoked_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 60px;">
+      <div style="font-size: 4rem; margin-bottom: 16px;">✅</div>
+      <h3 style="color: var(--text2);">Aucun certificat révoqué</h3>
+      <p style="color: var(--muted);">La liste de révocation est actuellement vide.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

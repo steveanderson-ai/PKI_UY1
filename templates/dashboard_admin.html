@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+{% block title %}Administration — PKI Université de Yaoundé I{% endblock %}
+{% block page_title %}Administration — Université de Yaoundé I{% endblock %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
+
+  :root {
+    --navy:        #03071e;
+    --navy-2:      #07152e;
+    --cyan:        #00d4ff;
+    --cyan-dim:    #00a8cc;
+    --cyan-pale:   rgba(0,212,255,0.07);
+    --gold:        #c9a84c;
+    --gold-dim:    rgba(201,168,76,0.12);
+    --green:       #00e5a0;
+    --green-dim:   rgba(0,229,160,0.1);
+    --red:         #ff4d6d;
+    --red-dim:     rgba(255,77,109,0.1);
+    --purple:      #a78bfa;
+    --purple-dim:  rgba(167,139,250,0.1);
+    --white:       #f0f4ff;
+    --white-dim:   rgba(240,244,255,0.5);
+    --border:      rgba(0,212,255,0.09);
+  }
+
+  .adm-wrap {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    color: var(--white);
+    display: flex; flex-direction: column; gap: 24px;
+  }
+
+  /* ── STAT CARDS ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .stat-card {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(7,21,46,0.75);
+    padding: 20px 22px;
+    position: relative; overflow: hidden;
+    transition: all 0.3s;
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    opacity: 0.5;
+  }
+  .stat-card.c-cyan::after  { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+  .stat-card.c-red::after   { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+  .stat-card.c-gold::after  { background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .stat-card.c-purple::after{ background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+  .stat-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.25); }
+
+  .stat-card-top {
+    display: flex; justify-content: flex-end; margin-bottom: 12px;
+  }
+  .stat-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+  .c-cyan .stat-icon   { background: rgba(0,212,255,0.1); }
+  .c-red .stat-icon    { background: var(--red-dim); }
+  .c-gold .stat-icon   { background: var(--gold-dim); }
+  .c-purple .stat-icon { background: var(--purple-dim); }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.57rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--white-dim); margin-bottom: 6px;
+  }
+  .stat-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.4rem; font-weight: 700; line-height: 1; margin-bottom: 4px;
+  }
+  .c-cyan .stat-value   { color: var(--cyan); }
+  .c-red .stat-value    { color: var(--red); }
+  .c-gold .stat-value   { color: var(--gold); }
+  .c-purple .stat-value { color: var(--purple); }
+
+  .stat-sub {
+    font-size: 0.7rem; color: var(--white-dim);
+  }
+
+  /* ── LAYOUT 2/1 ── */
+  .grid-2-1 {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+  }
+
+  /* ── CARD ── */
+  .adm-card {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(7,21,46,0.7);
+    backdrop-filter: blur(12px);
+    overflow: hidden; position: relative;
+    animation: fadeUp 0.5s ease calc(0.1s * var(--ci, 1)) both;
+  }
+  .adm-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+    opacity: 0.35;
+  }
+  .adm-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 15px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .adm-card-title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--white-dim);
+  }
+  .dot-c { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-cyan   { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+  .dot-gold   { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+  .dot-green  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-red    { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+  .card-link {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.1em;
+    color: var(--cyan); text-decoration: none; opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .card-link:hover { opacity: 1; }
+
+  .adm-card-body { padding: 22px; }
+
+  /* ── TABLE DEMANDES ── */
+  .adm-table { width: 100%; border-collapse: collapse; }
+  .adm-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.54rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--white-dim); padding: 0 0 12px 0;
+    border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .adm-table td {
+    padding: 13px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.04);
+    font-size: 0.8rem; color: var(--white-dim);
+    vertical-align: top;
+  }
+  .adm-table tr:last-child td { border-bottom: none; }
+  .mono-id { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--cyan); }
+  .req-name { font-weight: 500; color: var(--white); font-size: 0.82rem; }
+  .req-mat  { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--white-dim); margin-top: 2px; }
+
+  .badge-pending {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: 'DM Mono', monospace; font-size: 0.57rem; letter-spacing: 0.08em;
+    padding: 3px 8px; border-radius: 100px;
+    background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.25);
+    color: var(--gold);
+  }
+
+  /* ── BOUTONS ── */
+  .btn-xs {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 12px; border-radius: 5px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.7rem; font-weight: 500;
+    text-decoration: none; border: none; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--white-dim); }
+  .btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 44px 20px; text-align: center; gap: 10px;
+  }
+  .empty-icon {
+    width: 52px; height: 52px; border-radius: 10px;
+    background: var(--green-dim); border: 1px solid rgba(0,229,160,0.15);
+    display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+    margin-bottom: 6px;
+  }
+  .empty-text { font-size: 0.8rem; color: var(--white-dim); }
+
+  /* ── TIMELINE AUDIT ── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item {
+    display: flex; gap: 14px; padding: 12px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.04);
+  }
+  .tl-item:last-child { border-bottom: none; }
+  .tl-dot {
+    width: 32px; height: 32px; flex-shrink: 0;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; margin-top: 2px;
+  }
+  .tl-content { flex: 1; min-width: 0; }
+  .tl-title { font-size: 0.8rem; font-weight: 500; color: var(--white); margin-bottom: 3px; }
+  .tl-detail {
+    font-size: 0.72rem; color: var(--white-dim); margin-bottom: 5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tl-meta {
+    display: flex; gap: 12px;
+    font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.06em;
+    color: rgba(240,244,255,0.3);
+  }
+
+  /* ── ACTIONS RAPIDES ── */
+  .actions-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  }
+  .action-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(3,7,30,0.5);
+    text-decoration: none;
+    transition: all 0.3s; position: relative; overflow: hidden;
+  }
+  .action-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .action-card.ac-gold::before   { background: rgba(201,168,76,0.05); }
+  .action-card.ac-cyan::before   { background: rgba(0,212,255,0.05); }
+  .action-card.ac-purple::before { background: rgba(167,139,250,0.05); }
+  .action-card.ac-red::before    { background: rgba(255,77,109,0.05); }
+  .action-card.ac-green::before  { background: rgba(0,229,160,0.05); }
+
+  .action-card:hover { transform: translateY(-2px); }
+  .action-card.ac-gold:hover   { border-color: rgba(201,168,76,0.3); box-shadow: 0 8px 30px rgba(201,168,76,0.08); }
+  .action-card.ac-cyan:hover   { border-color: rgba(0,212,255,0.3);  box-shadow: 0 8px 30px rgba(0,212,255,0.08); }
+  .action-card.ac-purple:hover { border-color: rgba(167,139,250,0.3);box-shadow: 0 8px 30px rgba(167,139,250,0.08); }
+  .action-card.ac-red:hover    { border-color: rgba(255,77,109,0.3); box-shadow: 0 8px 30px rgba(255,77,109,0.08); }
+  .action-card.ac-green:hover  { border-color: rgba(0,229,160,0.3);  box-shadow: 0 8px 30px rgba(0,229,160,0.08); }
+  .action-card:hover::before   { opacity: 1; }
+
+  .action-card-icon-wrap {
+    width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  }
+  .ac-gold .action-card-icon-wrap   { background: var(--gold-dim); }
+  .ac-cyan .action-card-icon-wrap   { background: var(--cyan-pale); }
+  .ac-purple .action-card-icon-wrap { background: var(--purple-dim); }
+  .ac-red .action-card-icon-wrap    { background: var(--red-dim); }
+  .ac-green .action-card-icon-wrap  { background: var(--green-dim); }
+
+  .action-card-info { flex: 1; }
+  .action-card-title { font-size: 0.8rem; font-weight: 500; color: var(--white); }
+  .action-card-arrow {
+    font-size: 0.75rem; color: var(--white-dim);
+    transition: transform 0.2s;
+  }
+  .action-card:hover .action-card-arrow { transform: translateX(3px); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 1100px) { .grid-2-1 { grid-template-columns: 1fr; } }
+  @media (max-width: 900px)  { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px)  {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .actions-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="adm-wrap">
+
+  <!-- Statistiques -->
+  <div class="stats-row">
+    <div class="stat-card c-cyan">
+      <div class="stat-card-top"><div class="stat-icon">📜</div></div>
+      <div class="stat-label">Certificats émis</div>
+      <div class="stat-value">{{ total_certs }}</div>
+      <div class="stat-sub">dont {{ valid_certs }} valides</div>
+    </div>
+    <div class="stat-card c-red">
+      <div class="stat-card-top"><div class="stat-icon">🗑</div></div>
+      <div class="stat-label">Révoqués</div>
+      <div class="stat-value">{{ revoked_certs }}</div>
+      <div class="stat-sub">dans la CRL</div>
+    </div>
+    <div class="stat-card c-gold">
+      <div class="stat-card-top"><div class="stat-icon">📋</div></div>
+      <div class="stat-label">En attente</div>
+      <div class="stat-value">{{ pending_requests }}</div>
+      <div class="stat-sub">à traiter</div>
+    </div>
+    <div class="stat-card c-purple">
+      <div class="stat-card-top"><div class="stat-icon">👥</div></div>
+      <div class="stat-label">Utilisateurs</div>
+      <div class="stat-value">{{ total_users }}</div>
+      <div class="stat-sub">inscrits</div>
+    </div>
+  </div>
+
+  <!-- Demandes + Activité -->
+  <div class="grid-2-1">
+
+    <!-- Demandes en attente -->
+    <div class="adm-card" style="--ci:1">
+      <div class="adm-card-header">
+        <div class="adm-card-title">
+          <span class="dot-c dot-gold"></span>
+          Demandes en attente de validation
+        </div>
+        <a href="{{ url_for('pending_requests') }}" class="card-link">Voir tout →</a>
+      </div>
+      <div class="adm-card-body">
+        {% if recent_requests %}
+        <table class="adm-table">
+          <thead>
+            <tr>
+              <th>N° Demande</th>
+              <th>Demandeur</th>
+              <th>Statut</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in recent_requests %}
+            <tr>
+              <td><span class="mono-id">{{ req.request_number }}</span></td>
+              <td>
+                <div class="req-name">{{ req.full_name }}</div>
+                <div class="req-mat">{{ req.matricule }}</div>
+              </td>
+              <td><span class="badge-pending">⏳ En attente</span></td>
+              <td>{{ req.created_at.strftime('%d/%m/%Y') }}</td>
+              <td>
+                <a href="{{ url_for('pending_requests') }}#req-{{ req.id }}" class="btn-xs btn-ghost">Traiter</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">✅</div>
+          <div class="empty-text">Aucune demande en attente de traitement.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Activité récente -->
+    <div class="adm-card" style="--ci:2">
+      <div class="adm-card-header">
+        <div class="adm-card-title">
+          <span class="dot-c dot-cyan"></span>
+          Activité récente
+        </div>
+        <a href="{{ url_for('audit') }}" class="card-link">Voir tout →</a>
+      </div>
+      <div class="adm-card-body">
+        <div class="timeline">
+          {% for log in recent_logs %}
+          <div class="tl-item">
+            <div class="tl-dot" style="background: {{ log.color }}18; color: {{ log.color }};">
+              {{ log.icon }}
+            </div>
+            <div class="tl-content">
+              <div class="tl-title">{{ log.title }}</div>
+              <div class="tl-detail">{{ log.details[:75] }}{% if log.details|length > 75 %}…{% endif %}</div>
+              <div class="tl-meta">
+                <span>👤 {{ log.username }}</span>
+                <span>{{ log.created_at.strftime('%d/%m %H:%M') }}</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions rapides -->
+  <div class="adm-card" style="--ci:3">
+    <div class="adm-card-header">
+      <div class="adm-card-title">
+        <span class="dot-c dot-green"></span>
+        Actions rapides
+      </div>
+    </div>
+    <div class="adm-card-body">
+      <div class="actions-grid">
+        <a href="{{ url_for('pending_requests') }}" class="action-card ac-gold">
+          <div class="action-card-icon-wrap">📋</div>
+          <div class="action-card-info"><div class="action-card-title">Traiter les demandes</div></div>
+          <div class="action-card-arrow">→</div>
+        </a>
+        <a href="{{ url_for('certificates') }}" class="action-card ac-cyan">
+          <div class="action-card-icon-wrap">📜</div>
+          <div class="action-card-info"><div class="action-card-title">Gérer les certificats</div></div>
+          <div class="action-card-arrow">→</div>
+        </a>
+        <a href="{{ url_for('verify') }}" class="action-card ac-purple">
+          <div class="action-card-icon-wrap">🔍</div>
+          <div class="action-card-info"><div class="action-card-title">Vérifier un certificat</div></div>
+          <div class="action-card-arrow">→</div>
+        </a>
+        <a href="{{ url_for('view_crl') }}" class="action-card ac-red">
+          <div class="action-card-icon-wrap">🚫</div>
+          <div class="action-card-info"><div class="action-card-title">Consulter la CRL</div></div>
+          <div class="action-card-arrow">→</div>
+        </a>
+        <a href="{{ url_for('admin_ca') }}" class="action-card ac-gold">
+          <div class="action-card-icon-wrap">🏛️</div>
+          <div class="action-card-info"><div class="action-card-title">Configurer l'AC</div></div>
+          <div class="action-card-arrow">→</div>
+        </a>
+        <a href="{{ url_for('users') }}" class="action-card ac-green">
+          <div class="action-card-icon-wrap">👥</div>
+          <div class="action-card-info"><div class="action-card-title">Gérer les utilisateurs</div></div>
+          <div class="action-card-arrow">→</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

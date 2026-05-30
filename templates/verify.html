@@ -1,0 +1,1122 @@
+{% extends "base.html" %}
+{% block title %}Vérification de Certificat — Université de Yaoundé I{% endblock %}
+{% block page_title %}Vérification cryptographique{% endblock %}
+
+{% block extra_style %}
+<style>
+/* ═══════════ VERIFY PAGE — DESIGN ÉPOUSTOUFLANT ═══════════ */
+
+.verify-hero {
+  background: linear-gradient(135deg, #020818 0%, #0a1628 40%, #0d1f3c 100%);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 20px;
+  padding: 36px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.verify-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.verify-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: 40px;
+  width: 160px; height: 160px;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.verify-hero-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #00d4ff;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.verify-hero-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: #5a6a8a;
+  letter-spacing: 0.08em;
+}
+
+/* ── TABS ── */
+.verify-tabs {
+  display: flex;
+  gap: 0;
+  background: rgba(0,0,0,0.4);
+  border-radius: 14px;
+  padding: 5px;
+  margin-bottom: 28px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.verify-tab {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #5a6a8a;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.verify-tab.active {
+  background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.05));
+  color: #00d4ff;
+  border: 1px solid rgba(0,212,255,0.25);
+  box-shadow: 0 0 20px rgba(0,212,255,0.08);
+}
+
+.verify-tab-pem.active {
+  background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(167,139,250,0.05));
+  color: #a78bfa;
+  border: 1px solid rgba(167,139,250,0.25);
+  box-shadow: 0 0 20px rgba(167,139,250,0.08);
+}
+
+.verify-tab-icon {
+  font-size: 1.2rem;
+}
+
+/* ── PANELS ── */
+.verify-panel {
+  display: none;
+  animation: fadeInUp 0.35s ease;
+}
+
+.verify-panel.active {
+  display: block;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SEARCH FORM ── */
+.search-form-wrap {
+  background: linear-gradient(135deg, #0a1628, #0d1f3c);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.search-input-group {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.search-input-big {
+  flex: 1;
+  background: rgba(0,0,0,0.5);
+  border: 1.5px solid rgba(0,212,255,0.2);
+  border-radius: 12px;
+  padding: 16px 20px;
+  color: #e2e8f0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.search-input-big:focus {
+  border-color: rgba(0,212,255,0.6);
+  box-shadow: 0 0 0 3px rgba(0,212,255,0.08), 0 0 20px rgba(0,212,255,0.05);
+}
+
+.search-input-big::placeholder { color: #3a4a6a; }
+
+.btn-verify-search {
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  border: none;
+  border-radius: 12px;
+  padding: 16px 28px;
+  color: #020818;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-verify-search:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,212,255,0.3);
+}
+
+.search-hints {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.search-hint-chip {
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.15);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: #5a7a9a;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-hint-chip:hover {
+  background: rgba(0,212,255,0.12);
+  color: #00d4ff;
+  border-color: rgba(0,212,255,0.3);
+}
+
+/* ── PEM FORM ── */
+.pem-form-wrap {
+  background: linear-gradient(135deg, #0d0a1e, #150d28);
+  border: 1px solid rgba(167,139,250,0.2);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.pem-textarea {
+  width: 100%;
+  min-height: 220px;
+  background: rgba(0,0,0,0.6);
+  border: 1.5px solid rgba(167,139,250,0.2);
+  border-radius: 12px;
+  padding: 16px 20px;
+  color: #c4b5fd;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  line-height: 1.7;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.pem-textarea:focus {
+  border-color: rgba(167,139,250,0.5);
+  box-shadow: 0 0 0 3px rgba(167,139,250,0.06), 0 0 20px rgba(167,139,250,0.04);
+}
+
+.pem-textarea::placeholder { color: #3a2a5a; }
+
+.pem-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-verify-pem {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  color: #fff;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-verify-pem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(167,139,250,0.35);
+}
+
+.btn-clear-pem {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px 18px;
+  color: #5a6a8a;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-clear-pem:hover {
+  border-color: rgba(255,255,255,0.2);
+  color: #94a3b8;
+}
+
+.pem-info-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: #5a6a8a;
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ══════════════════════════════════════
+   RÉSULTATS — LE CŒUR DE LA PAGE
+══════════════════════════════════════ */
+
+.result-container {
+  margin-top: 28px;
+  animation: fadeInUp 0.4s ease;
+}
+
+/* ── Bandeau verdict ── */
+.verdict-banner {
+  border-radius: 20px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.verdict-banner.valid {
+  background: linear-gradient(135deg, rgba(0,224,150,0.1), rgba(0,224,150,0.03));
+  border: 1px solid rgba(0,224,150,0.3);
+}
+
+.verdict-banner.invalid {
+  background: linear-gradient(135deg, rgba(255,59,92,0.1), rgba(255,59,92,0.03));
+  border: 1px solid rgba(255,59,92,0.3);
+}
+
+.verdict-banner::after {
+  content: '';
+  position: absolute;
+  right: -30px; top: 50%;
+  transform: translateY(-50%);
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  opacity: 0.04;
+}
+
+.verdict-banner.valid::after   { background: #00e096; }
+.verdict-banner.invalid::after { background: #ff3b5c; }
+
+.verdict-icon-big {
+  font-size: 3.5rem;
+  flex-shrink: 0;
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+@keyframes popIn {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.verdict-text-block { flex: 1; }
+
+.verdict-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.verdict-banner.valid   .verdict-label { color: #00e096; }
+.verdict-banner.invalid .verdict-label { color: #ff3b5c; }
+
+.verdict-subject {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.1rem;
+  color: #cbd5e1;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.verdict-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: #5a6a8a;
+}
+
+/* ── Layout résultats ── */
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .result-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Étapes de vérification ── */
+.steps-card {
+  background: linear-gradient(135deg, #080f1e, #0a1220);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.steps-card-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0,0,0,0.3);
+}
+
+.steps-card-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #00d4ff;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.steps-list {
+  padding: 8px 0;
+}
+
+.step-item {
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  position: relative;
+  transition: background 0.2s;
+  animation: stepSlideIn 0.4s ease both;
+}
+
+.step-item:last-child { border-bottom: none; }
+
+.step-item:hover {
+  background: rgba(255,255,255,0.02);
+  cursor: pointer;
+}
+
+@keyframes stepSlideIn {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+{% for i in range(5) %}
+.step-item:nth-child({{ i + 1 }}) { animation-delay: {{ i * 0.08 }}s; }
+{% endfor %}
+
+.step-indicator {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.step-indicator.ok {
+  background: rgba(0,224,150,0.1);
+  border: 1px solid rgba(0,224,150,0.3);
+}
+
+.step-indicator.err {
+  background: rgba(255,59,92,0.1);
+  border: 1px solid rgba(255,59,92,0.3);
+}
+
+.step-content { flex: 1; min-width: 0; }
+
+.step-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.step-detail {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.step-detail.ok  { color: #00e096; }
+.step-detail.err { color: #ff3b5c; }
+
+.step-technical {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: #3a4a6a;
+  line-height: 1.6;
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  border-left: 2px solid rgba(255,255,255,0.06);
+  display: none;
+  word-break: break-all;
+}
+
+.step-item.expanded .step-technical { display: block; }
+
+.step-expand-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: #3a4a6a;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+}
+
+.step-expand-btn:hover { color: #00d4ff; }
+
+.step-status-badge {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+/* ── Sidebar infos certificat ── */
+.cert-info-card {
+  background: linear-gradient(135deg, #080f1e, #0a1220);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  overflow: hidden;
+  position: sticky;
+  top: 20px;
+}
+
+.cert-info-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cert-info-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #a78bfa;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.cert-field {
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.cert-field:last-child { border-bottom: none; }
+
+.cert-field-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  color: #3a4a6a;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 5px;
+}
+
+.cert-field-value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.cert-field-value.mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: #a78bfa;
+}
+
+.cert-field-value.fingerprint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  color: #5a6a8a;
+  word-break: break-all;
+  line-height: 1.8;
+}
+
+.cert-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.cert-status-pill.valid {
+  background: rgba(0,224,150,0.12);
+  color: #00e096;
+  border: 1px solid rgba(0,224,150,0.3);
+}
+
+.cert-status-pill.invalid {
+  background: rgba(255,59,92,0.12);
+  color: #ff3b5c;
+  border: 1px solid rgba(255,59,92,0.3);
+}
+
+.cert-revoke-info {
+  margin: 0 20px 12px;
+  padding: 10px 14px;
+  background: rgba(255,59,92,0.08);
+  border: 1px solid rgba(255,59,92,0.2);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: #ff3b5c;
+  line-height: 1.6;
+}
+
+/* ── Barre de progression globale ── */
+.progress-strip {
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  margin: 0 24px 16px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.progress-fill.full { background: linear-gradient(90deg, #00d4ff, #00e096); }
+.progress-fill.fail { background: linear-gradient(90deg, #ff3b5c, #ff8c00); }
+
+/* ── CA Info quick box ── */
+.ca-quick-box {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,212,255,0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ca-quick-icon {
+  font-size: 1.8rem;
+}
+
+.ca-quick-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #00d4ff;
+}
+
+.ca-quick-fp {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  color: #3a4a6a;
+}
+
+/* ── Aucun résultat ── */
+.verify-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: #3a4a6a;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.verify-empty-icon { font-size: 3rem; margin-bottom: 16px; }
+
+/* ── Download bar ── */
+.dl-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+
+.btn-dl-ca {
+  background: rgba(201,168,76,0.1);
+  border-color: rgba(201,168,76,0.3);
+  color: #c9a84c;
+}
+
+.btn-dl-ca:hover {
+  background: rgba(201,168,76,0.18);
+  transform: translateY(-1px);
+}
+
+.btn-dl-crl {
+  background: rgba(0,212,255,0.06);
+  border-color: rgba(0,212,255,0.2);
+  color: #00d4ff;
+}
+
+.btn-dl-crl:hover {
+  background: rgba(0,212,255,0.12);
+  transform: translateY(-1px);
+}
+
+.btn-dl-cert {
+  background: rgba(167,139,250,0.08);
+  border-color: rgba(167,139,250,0.25);
+  color: #a78bfa;
+}
+
+.btn-dl-cert:hover {
+  background: rgba(167,139,250,0.15);
+  transform: translateY(-1px);
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .search-input-group { flex-direction: column; }
+  .verify-hero { padding: 20px; }
+  .result-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ HERO ══ -->
+<div class="verify-hero">
+  <div class="verify-hero-title">🔐 Module de Vérification Cryptographique</div>
+  <div class="verify-hero-sub">
+    INF4268 · PKI Université de Yaoundé I · Vérification X.509 RFC 5280 · RSA-2048 / SHA-256
+  </div>
+  {% if ca %}
+  <div style="margin-top: 16px;">
+    <div class="ca-quick-box">
+      <div class="ca-quick-icon">🏛️</div>
+      <div>
+        <div class="ca-quick-name">{{ ca.name }}</div>
+        <div class="ca-quick-fp">Empreinte CA : {{ ca.fingerprint[:40] }}...</div>
+      </div>
+      <div class="dl-bar" style="margin-top: 0; margin-left: auto;">
+        <a href="{{ url_for('download_ca_cert') }}" class="btn-dl btn-dl-ca">⬇ CA Cert</a>
+        <a href="{{ url_for('download_crl') }}" class="btn-dl btn-dl-crl">⬇ CRL</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ══ TABS ══ -->
+<div class="verify-tabs" id="verifyTabs">
+  <button class="verify-tab {% if mode != 'pem' %}active{% endif %}"
+          onclick="switchTab('search')" id="tab-search">
+    <span class="verify-tab-icon">🔎</span>
+    RECHERCHE PAR IDENTIFIANT
+  </button>
+  <button class="verify-tab verify-tab-pem {% if mode == 'pem' %}active{% endif %}"
+          onclick="switchTab('pem')" id="tab-pem">
+    <span class="verify-tab-icon">📄</span>
+    VÉRIFICATION PEM EXTERNE
+  </button>
+</div>
+
+<!-- ══ PANEL 1 : RECHERCHE ══ -->
+<div class="verify-panel {% if mode != 'pem' %}active{% endif %}" id="panel-search">
+  <div class="search-form-wrap">
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: #5a7a9a; margin-bottom: 16px; letter-spacing: 0.05em;">
+      MODE 1 — RECHERCHE DANS LA BASE DE DONNÉES DE L'UNIVERSITÉ
+    </div>
+    <form method="POST">
+      <input type="hidden" name="mode" value="search">
+      <div class="search-input-group">
+        <input type="text"
+               name="serial_input"
+               id="searchInput"
+               class="search-input-big"
+               placeholder="Numéro de série · Nom complet · Email · ex: Alice Kamga"
+               value="{{ result.search_query if result and result.get('search_query') else '' }}"
+               autocomplete="off">
+        <button type="submit" class="btn-verify-search">
+          <span>🔍</span> VÉRIFIER
+        </button>
+      </div>
+      <div class="search-hints">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: #3a4a6a; margin-right: 4px;">Chercher par :</span>
+        <span class="search-hint-chip" onclick="setHint('nom complet')">Nom complet</span>
+        <span class="search-hint-chip" onclick="setHint('numéro de série')">N° série</span>
+        <span class="search-hint-chip" onclick="setHint('email')">Email</span>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ PANEL 2 : PEM BRUT ══ -->
+<div class="verify-panel {% if mode == 'pem' %}active{% endif %}" id="panel-pem">
+  <div class="pem-form-wrap">
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: #7a5aa0; margin-bottom: 16px; letter-spacing: 0.05em;">
+      MODE 2 — VÉRIFICATION D'UN CERTIFICAT EXTERNE (FICHIER .PEM)
+    </div>
+    <div style="font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; color: #8892a4; margin-bottom: 14px; line-height: 1.6;">
+      Collez ici le contenu complet d'un fichier <code style="color:#a78bfa; background: rgba(167,139,250,0.1); padding: 2px 6px; border-radius: 4px;">.pem</code> reçu de n'importe quelle source.
+      La vérification sera purement cryptographique, indépendante de la base de données.
+    </div>
+    <form method="POST">
+      <input type="hidden" name="mode" value="pem">
+      <textarea name="pem_input"
+                id="pemInput"
+                class="pem-textarea"
+                placeholder="-----BEGIN CERTIFICATE-----
+MIIDXTCCAkWgAwIBAgIJANxxxxxxxxxxxxxxxxxx...
+...
+-----END CERTIFICATE-----"
+                spellcheck="false">{{ result.pem_input if result and result.get('pem_input') else '' }}</textarea>
+      <div class="pem-actions">
+        <button type="submit" class="btn-verify-pem">
+          <span>🔬</span> ANALYSER LE CERTIFICAT
+        </button>
+        <button type="button" class="btn-clear-pem" onclick="document.getElementById('pemInput').value=''">
+          ✕ Effacer
+        </button>
+        <label style="cursor:pointer; display: flex; align-items: center; gap: 6px;">
+          <input type="file" accept=".pem,.crt,.cer" style="display:none;" onchange="loadPemFile(this)">
+          <span class="btn-clear-pem" style="border-color: rgba(167,139,250,0.2); color: #a78bfa;">
+            📁 Charger fichier .pem
+          </span>
+        </label>
+        <div class="pem-info-badge">Formats acceptés : .pem · .crt · .cer</div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ZONE DE RÉSULTATS
+══════════════════════════════════════ -->
+{% if result %}
+<div class="result-container">
+
+  <!-- Verdict principal -->
+  <div class="verdict-banner {% if result.valid %}valid{% else %}invalid{% endif %}">
+    <div class="verdict-icon-big">{% if result.valid %}✅{% else %}❌{% endif %}</div>
+    <div class="verdict-text-block">
+      <div class="verdict-label">
+        {% if result.valid %}CERTIFICAT VALIDE{% else %}CERTIFICAT INVALIDE{% endif %}
+      </div>
+      <div class="verdict-subject">{{ result.get('subject', 'Certificat inconnu') }}</div>
+      <div class="verdict-meta">
+        {% if result.get('serial_hex') %}Série : {{ result.serial_hex }} · {% endif %}
+        {% if result.get('issuer') %}Émetteur : {{ result.issuer }} · {% endif %}
+        Vérification : {{ result.steps|length }} étape(s) · 
+        Mode : {% if mode == 'pem' %}PEM externe{% else %}Recherche base{% endif %}
+      </div>
+    </div>
+    <div>
+      {% if result.valid %}
+      <span class="cert-status-pill valid">● VALID</span>
+      {% else %}
+      <span class="cert-status-pill invalid">● INVALID</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="result-grid">
+
+    <!-- ── Étapes de vérification ── -->
+    <div class="steps-card">
+      <div class="steps-card-header">
+        <span>⚙</span>
+        <span class="steps-card-title">Étapes de vérification cryptographique</span>
+        <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: #3a4a6a;">
+          {{ result.steps|selectattr('ok')|list|length }}/{{ result.steps|length }} réussies
+        </span>
+      </div>
+
+      <!-- Barre de progression -->
+      <div class="progress-strip" style="margin-top: 12px;">
+        <div class="progress-fill {% if result.valid %}full{% else %}fail{% endif %}"
+             id="progressBar"
+             style="width: 0%;"></div>
+      </div>
+
+      <div class="steps-list">
+        {% set step_num = namespace(value=0) %}
+        {% for step in result.steps %}
+        {% set step_num.value = step_num.value + 1 %}
+        <div class="step-item {% if step.ok %}ok{% else %}err{% endif %}"
+             onclick="toggleStep(this)"
+             style="animation-delay: {{ (loop.index0 * 0.1) }}s">
+          <div class="step-indicator {% if step.ok %}ok{% else %}err{% endif %}">
+            {{ step.icon }}
+          </div>
+          <div class="step-content">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: #3a4a6a; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px;">
+                ÉTAPE {{ step_num.value }}
+              </span>
+              <span class="step-name">{{ step.name }}</span>
+            </div>
+            <div class="step-detail {% if step.ok %}ok{% else %}err{% endif %}">
+              {{ step.detail }}
+            </div>
+            <div class="step-technical" id="tech-{{ loop.index }}">
+              {{ step.get('technical', '') }}
+            </div>
+            <button class="step-expand-btn" onclick="event.stopPropagation(); toggleStep(this.closest('.step-item'))">
+              <span class="expand-label">▶ Détails techniques</span>
+            </button>
+          </div>
+          <div class="step-status-badge">
+            {% if step.ok %}
+            <span style="color: #00e096; font-size: 1.1rem;">✓</span>
+            {% else %}
+            <span style="color: #ff3b5c; font-size: 1.1rem;">✗</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ── Informations du certificat ── -->
+    <div>
+      <div class="cert-info-card">
+        <div class="cert-info-header">
+          <span>📜</span>
+          <span class="cert-info-title">Informations du certificat</span>
+        </div>
+
+        {% if result.get('revoke_reason_label') %}
+        <div class="cert-revoke-info">
+          ⚠ Révoqué · Motif : {{ result.revoke_reason_label }}
+          {% if result.get('cert_obj') and result.cert_obj.revoked_at %}
+          <br>Date : {{ result.cert_obj.revoked_at.strftime('%d/%m/%Y à %H:%M') }}
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="cert-field">
+          <div class="cert-field-label">Sujet (CN)</div>
+          <div class="cert-field-value">{{ result.get('subject', '—') }}</div>
+        </div>
+
+        {% if result.get('issuer') %}
+        <div class="cert-field">
+          <div class="cert-field-label">Émetteur (Issuer)</div>
+          <div class="cert-field-value">{{ result.issuer }}</div>
+        </div>
+        {% endif %}
+
+        {% if result.get('version') %}
+        <div class="cert-field">
+          <div class="cert-field-label">Version · Algorithme</div>
+          <div class="cert-field-value">{{ result.version }} · {{ result.get('algo', 'SHA256withRSA') }}</div>
+        </div>
+        {% endif %}
+
+        <div class="cert-field">
+          <div class="cert-field-label">Numéro de série</div>
+          <div class="cert-field-value mono">
+            {% if result.get('serial_hex') %}{{ result.serial_hex }}{% elif result.get('cert_obj') %}{{ result.cert_obj.serial_hex }}{% else %}—{% endif %}
+          </div>
+        </div>
+
+        <div class="cert-field">
+          <div class="cert-field-label">Émis le</div>
+          <div class="cert-field-value">{{ result.get('issued', '—') }}</div>
+        </div>
+
+        <div class="cert-field">
+          <div class="cert-field-label">Expire le</div>
+          <div class="cert-field-value">{{ result.get('expires', '—') }}</div>
+        </div>
+
+        {% if result.get('fingerprint') %}
+        <div class="cert-field">
+          <div class="cert-field-label">Empreinte SHA-256</div>
+          <div class="cert-field-value fingerprint">{{ result.fingerprint }}</div>
+        </div>
+        {% endif %}
+
+        {% if result.get('cert_obj') %}
+        <div class="cert-field">
+          <div class="cert-field-label">Statut base de données</div>
+          <div class="cert-field-value">
+            {% set badge = result.cert_obj.status_badge() %}
+            <span class="cert-status-pill {% if result.cert_obj.status == 'VALID' %}valid{% else %}invalid{% endif %}">
+              {{ badge[0] }}
+            </span>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Boutons d'action -->
+        <div style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+          {% if result.get('cert_obj') %}
+          <a href="{{ url_for('download_cert', cert_id=result.cert_obj.id) }}"
+             class="btn-dl btn-dl-cert"
+             style="display: flex; justify-content: center; margin-bottom: 8px;">
+            ⬇ Télécharger ce certificat
+          </a>
+          {% endif %}
+          <a href="{{ url_for('download_ca_cert') }}"
+             class="btn-dl btn-dl-ca"
+             style="display: flex; justify-content: center; margin-bottom: 8px;">
+            🏛 CA Université de Yaoundé I
+          </a>
+          <a href="{{ url_for('download_crl') }}"
+             class="btn-dl btn-dl-crl"
+             style="display: flex; justify-content: center;">
+            📋 Liste de Révocation (CRL)
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /result-grid -->
+
+</div><!-- /result-container -->
+{% else %}
+
+<!-- État vide élégant -->
+<div class="steps-card" style="margin-top: 20px;">
+  <div class="verify-empty">
+    <div class="verify-empty-icon">🔐</div>
+    <div style="font-size: 0.85rem; color: #5a6a8a; font-family: 'Rajdhani', sans-serif; font-weight: 600;">
+      Entrez un identifiant ou collez un PEM pour lancer la vérification
+    </div>
+    <div style="margin-top: 12px; font-size: 0.62rem; color: #2a3a5a;">
+      La vérification comprend 5 étapes cryptographiques · Signature RSA · Validité · CRL · BasicConstraints · KeyUsage
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Gestion des onglets ──
+function switchTab(tab) {
+  document.querySelectorAll('.verify-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.verify-tab').forEach(t => t.classList.remove('active'));
+
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ── Hints de recherche ──
+function setHint(type) {
+  const input = document.getElementById('searchInput');
+  input.focus();
+  input.placeholder = 'Recherche par ' + type + '...';
+}
+
+// ── Toggle détails techniques ──
+function toggleStep(el) {
+  el.classList.toggle('expanded');
+  const btn = el.querySelector('.expand-label');
+  if (btn) {
+    btn.textContent = el.classList.contains('expanded')
+      ? '▼ Masquer les détails'
+      : '▶ Détails techniques';
+  }
+}
+
+// ── Charger un fichier PEM ──
+function loadPemFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('pemInput').value = e.target.result;
+    // Switcher sur l'onglet PEM
+    switchTab('pem');
+  };
+  reader.readAsText(file);
+}
+
+// ── Animation barre de progression ──
+document.addEventListener('DOMContentLoaded', function() {
+  const bar = document.getElementById('progressBar');
+  if (bar) {
+    const steps = document.querySelectorAll('.step-item');
+    const okSteps = document.querySelectorAll('.step-item.ok');
+    const pct = steps.length > 0 ? (okSteps.length / steps.length * 100) : 0;
+    setTimeout(() => {
+      bar.style.width = pct + '%';
+    }, 300);
+  }
+
+  // Auto-switch si résultat PEM
+  {% if mode == 'pem' %}
+  switchTab('pem');
+  {% endif %}
+
+  // Garder l'onglet actif si résultat search
+  {% if mode == 'search' %}
+  switchTab('search');
+  {% endif %}
+});
+</script>
+{% endblock %}

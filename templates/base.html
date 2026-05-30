@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}PKI Université de Yaoundé I — INF4268{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  {% block extra_style %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<!-- ══════════ SIDEBAR ══════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🏛️</div>
+    <div class="sidebar-logo-text">
+      <h2>UNIVERSITÉ DE YAOUNDÉ I</h2>
+      <p>PKI · INF4268 Master SSI</p>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    {% if current_user.is_admin() %}
+      <!-- MENU ADMINISTRATEUR COMPLET -->
+      <div class="nav-section">🏛️ Administration UY1</div>
+      <a href="{{ url_for('dashboard_admin') }}" class="nav-link {% if request.endpoint=='dashboard_admin' %}active{% endif %}">
+        <div class="nav-icon">📊</div> Tableau de bord
+      </a>
+      <a href="{{ url_for('certificates') }}" class="nav-link {% if request.endpoint=='certificates' %}active{% endif %}">
+        <div class="nav-icon">📜</div> Gestion des certificats
+      </a>
+      <a href="{{ url_for('pending_requests') }}" class="nav-link {% if request.endpoint=='pending_requests' %}active{% endif %}">
+        <div class="nav-icon">📋</div> Demandes en attente
+        {% if pending_count > 0 %}
+        <span class="nav-badge">{{ pending_count }}</span>
+        {% endif %}
+      </a>
+      <a href="{{ url_for('verify') }}" class="nav-link {% if request.endpoint=='verify' %}active{% endif %}">
+        <div class="nav-icon">🔍</div> Vérifier certificat
+      </a>
+      <a href="{{ url_for('view_crl') }}" class="nav-link {% if request.endpoint=='view_crl' %}active{% endif %}">
+        <div class="nav-icon">📋</div> Liste de révocation (CRL)
+      </a>
+      <a href="{{ url_for('audit') }}" class="nav-link {% if request.endpoint=='audit' %}active{% endif %}">
+        <div class="nav-icon">📝</div> Audit & journaux
+      </a>
+      <a href="{{ url_for('users') }}" class="nav-link {% if request.endpoint=='users' %}active{% endif %}">
+        <div class="nav-icon">👥</div> Utilisateurs
+      </a>
+      <a href="{{ url_for('admin_ca') }}" class="nav-link {% if request.endpoint=='admin_ca' %}active{% endif %}">
+        <div class="nav-icon">🏛️</div> Configuration AC
+      </a>
+    {% else %}
+      <!-- MENU UTILISATEUR STANDARD -->
+      <div class="nav-section">🏠 Mon espace</div>
+      <a href="{{ url_for('dashboard_user') }}" class="nav-link {% if request.endpoint=='dashboard_user' %}active{% endif %}">
+        <div class="nav-icon">📊</div> Tableau de bord
+      </a>
+      <a href="{{ url_for('certificates') }}" class="nav-link {% if request.endpoint=='certificates' %}active{% endif %}">
+        <div class="nav-icon">📜</div> Mes certificats
+      </a>
+      <a href="{{ url_for('request_certificate') }}" class="nav-link {% if request.endpoint=='request_certificate' %}active{% endif %}">
+        <div class="nav-icon">📝</div> Demander un certificat
+      </a>
+      <a href="{{ url_for('profile') }}" class="nav-link {% if request.endpoint=='profile' %}active{% endif %}">
+        <div class="nav-icon">👤</div> Mon profil
+      </a>
+    {% endif %}
+    
+    <div class="nav-section">🔐 Sécurité</div>
+    <a href="{{ url_for('logout') }}" class="nav-link">
+      <div class="nav-icon">↩</div> Déconnexion
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-status">
+      <div class="status-icon">🏛️</div>
+      <div>
+        <div class="status-title">UNIVERSITÉ DE YAOUNDÉ I</div>
+        <div class="status-desc">Autorité de Certification officielle</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════ TOPBAR ══════════ -->
+<div class="topbar">
+  <button class="topbar-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('collapsed')">☰</button>
+  <div class="topbar-title">
+    {% block page_title %}PKI Université de Yaoundé I{% endblock %}
+    {% if ca_exists %}
+    <div class="topbar-ca-badge">
+      🏛 UNIVERSITÉ DE YAOUNDÉ I
+      <div class="wave">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="topbar-actions">
+    <a href="{{ url_for('profile') }}" class="user-pill">
+      <div class="user-avatar" style="background:{{ current_user.avatar_color }};">
+        {{ current_user.initials() }}
+      </div>
+      <div class="user-pill-info">
+        <div class="user-name">{{ current_user.display_name() }}</div>
+        <div class="user-role">{% if current_user.is_admin() %}ADMIN UY1{% else %}{{ current_user.get_status_label() }}{% endif %}</div>
+      </div>
+      <span style="color:var(--muted);margin-left:4px;">▾</span>
+    </a>
+  </div>
+</div>
+
+<!-- ══════════ MAIN CONTENT ══════════ -->
+<div class="main-wrapper">
+  <div class="flash-zone">
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in msgs %}
+      <div class="alert alert-{{ cat }}">
+        {% if cat=='success' %}✅{% elif cat=='danger' %}❌{% elif cat=='warning' %}⚠️{% else %}ℹ️{% endif %}
+        {{ msg }}
+      </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+  <div class="page-content">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+{% else %}
+<!-- ══════════ PAGE NON AUTHENTIFIÉE ══════════ -->
+<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;min-width:360px;max-width:500px;">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+    <div class="alert alert-{{ cat }}">
+      {% if cat=='success' %}✅{% elif cat=='danger' %}❌{% elif cat=='warning' %}⚠️{% else %}ℹ️{% endif %}
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

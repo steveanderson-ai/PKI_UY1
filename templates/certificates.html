@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Certificats — Université de Yaoundé I{% endblock %}
+{% block page_title %}Gestion des certificats{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <span class="dot dot-cyan"></span>
+      {% if current_user.is_admin() %}TOUS LES CERTIFICATS{% else %}MES CERTIFICATS{% endif %}
+    </div>
+    {% if current_user.is_admin() and ca_exists %}
+    <a href="{{ url_for('api_stats') }}" class="card-link">↻ Actualiser</a>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if certs %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Propriétaire</th>
+            <th>Série</th>
+            <th>Délivré le</th>
+            <th>Expire le</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cert in certs %}
+          <tr>
+            <td>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:34px; height:34px; border-radius:8px; background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.05)); border:1px solid rgba(201,168,76,0.2); display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0;">
+                  {% if cert.status_type == 'etudiant' %}🎓
+                  {% elif cert.status_type == 'enseignant' %}👨‍🏫
+                  {% else %}👔{% endif %}
+                </div>
+                <div>
+                  <strong>{{ cert.common_name }}</strong><br>
+                  <span class="mono" style="font-size:0.62rem; color:var(--muted);">{{ cert.email }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="mono" style="font-size:0.7rem; color:var(--cyan);">{{ cert.serial_hex }}</span>
+            </td>
+            <td style="font-size:0.85rem;">{{ cert.issued_at.strftime('%d/%m/%Y') }}</td>
+            <td style="font-size:0.85rem;">
+              {% if cert.days_until_expiry() is not none and cert.days_until_expiry() < 30 and cert.status == 'VALID' %}
+              <span class="text-gold">⚠️ {{ cert.expires_at.strftime('%d/%m/%Y') if cert.expires_at else '-' }}</span>
+              {% else %}
+              {{ cert.expires_at.strftime('%d/%m/%Y') if cert.expires_at else '-' }}
+              {% endif %}
+            </td>
+            <td>
+              {% set badge = cert.status_badge() %}
+              <span class="badge {{ badge[1] }}">{{ badge[0] }}</span>
+            </td>
+            <td>
+              <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                <!-- Bouton VOIR — certificat officiel -->
+                <a href="{{ url_for('view_certificate', cert_id=cert.id) }}"
+                   class="btn btn-sm"
+                   style="background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.06)); border:1px solid rgba(201,168,76,0.35); color:#c9a84c; font-family:'JetBrains Mono',monospace; font-size:0.62rem; letter-spacing:0.05em; padding:6px 12px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:5px; transition:all 0.2s; white-space:nowrap;"
+                   onmouseover="this.style.background='linear-gradient(135deg,rgba(201,168,76,0.28),rgba(201,168,76,0.12))'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(201,168,76,0.2)';"
+                   onmouseout="this.style.background='linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.06))'; this.style.transform='translateY(0)'; this.style.boxShadow='none';"
+                   title="Voir le certificat officiel">
+                  👁 Voir
+                </a>
+                <!-- Bouton TÉLÉCHARGER -->
+                <a href="{{ url_for('download_cert', cert_id=cert.id) }}"
+                   class="btn btn-outline btn-sm"
+                   title="Télécharger le fichier .pem">
+                  ⬇️
+                </a>
+                <!-- Bouton RÉVOQUER (admin seulement, certificat valide) -->
+                {% if current_user.is_admin() and cert.status == 'VALID' %}
+                <button class="btn btn-outline btn-sm text-red"
+                        onclick="openRevokeModal({{ cert.id }}, '{{ cert.common_name }}')"
+                        title="Révoquer ce certificat">
+                  🗑
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 60px;">
+      <div style="font-size: 4rem; margin-bottom: 16px;">📜</div>
+      <h3 style="color: var(--text2);">Aucun certificat trouvé</h3>
+      {% if not current_user.is_admin() %}
+      <p style="color: var(--muted);">Vous n'avez pas encore de certificat. Faites une demande auprès de l'administration.</p>
+      <a href="{{ url_for('request_certificate') }}" class="btn btn-cyan" style="margin-top: 16px;">📝 Faire une demande</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ══ Modal de révocation ══ -->
+<div id="revokeModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">🗑 Révocation de certificat</div>
+    <div class="modal-desc" id="revoke-cert-name"></div>
+    <form id="revoke-form" method="POST">
+      <div class="form-group">
+        <label class="form-label">Motif de révocation</label>
+        <select name="reason" class="form-control">
+          {% for key, label in reasons_labels.items() %}
+          <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="modal-btns">
+        <button type="submit" class="btn btn-red">Confirmer la révocation</button>
+        <button type="button" class="btn btn-outline" onclick="closeRevokeModal()">Annuler</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openRevokeModal(certId, certName) {
+  document.getElementById('revoke-cert-name').innerHTML =
+    `Certificat de <strong>${certName}</strong><br>Cette action est irréversible.`;
+  document.getElementById('revoke-form').action = `/certificates/revoke/${certId}`;
+  document.getElementById('revokeModal').classList.add('open');
+}
+
+function closeRevokeModal() {
+  document.getElementById('revokeModal').classList.remove('open');
+}
+</script>
+{% endblock %}

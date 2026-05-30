@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Utilisateurs — Université de Yaoundé I{% endblock %}
+{% block page_title %}Gestion des utilisateurs{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <span class="dot dot-purple"></span>
+      UTILISATEURS INSCRITS ({{ all_users|length }})
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>Matricule</th>
+            <th>Statut</th>
+            <th>Email</th>
+            <th>Rôle</th>
+            <th>Inscrit le</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in all_users %}
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="user-avatar" style="width: 32px; height: 32px; background: {{ user.avatar_color }};">{{ user.initials() }}</div>
+                <div>
+                  <strong>{{ user.display_name() }}</strong><br>
+                  <span class="mono" style="font-size: 0.65rem;">{{ user.username }}</span>
+                </div>
+              </div>
+            </td>
+            <td class="mono">{{ user.matricule or '-' }}</td>
+            <td>{{ user.get_status_label() }}</td>
+            <td>{{ user.email }}</td>
+            <td>{% if user.is_admin() %}<span class="badge badge-admin">ADMIN UY1</span>{% else %}<span class="badge badge-user">UTILISATEUR</span>{% endif %}</td>
+            <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+            <td>
+              {% if not user.is_admin() and current_user.is_admin() and user.id != current_user.id %}
+              <form method="POST" action="{{ url_for('promote_user', uid=user.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-outline btn-sm">👑 Promouvoir admin</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

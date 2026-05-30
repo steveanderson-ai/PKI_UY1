@@ -1,0 +1,621 @@
+{% extends "base.html" %}
+{% block title %}Demander un certificat — Université de Yaoundé I{% endblock %}
+{% block page_title %}Demande de certificat numérique{% endblock %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
+
+  :root {
+    --navy:        #03071e;
+    --navy-2:      #07152e;
+    --cyan:        #00d4ff;
+    --cyan-dim:    #00a8cc;
+    --cyan-pale:   rgba(0,212,255,0.06);
+    --gold:        #c9a84c;
+    --gold-dim:    rgba(201,168,76,0.12);
+    --green:       #00e5a0;
+    --green-dim:   rgba(0,229,160,0.1);
+    --white:       #f0f4ff;
+    --white-dim:   rgba(240,244,255,0.5);
+    --border:      rgba(0,212,255,0.1);
+    --red:         #ff4d6d;
+  }
+
+  .req-wrap {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    color: var(--white);
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex; flex-direction: column; gap: 20px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .req-hero {
+    display: flex; align-items: center; gap: 22px;
+    padding: 24px 28px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,229,160,0.2);
+    background: linear-gradient(130deg, rgba(0,229,160,0.04), rgba(7,21,46,0.9));
+    position: relative; overflow: hidden;
+  }
+  .req-hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0.4;
+  }
+  .req-hero-icon {
+    width: 56px; height: 56px; flex-shrink: 0;
+    border-radius: 12px;
+    background: var(--green-dim);
+    border: 1px solid rgba(0,229,160,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+  }
+  .req-hero-text { flex: 1; }
+  .req-hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--green); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .req-hero-eyebrow::before { content: '●'; font-size: 0.4rem; animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .req-hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem; font-weight: 600; color: var(--white); margin-bottom: 4px;
+  }
+  .req-hero-sub { font-size: 0.78rem; color: var(--white-dim); line-height: 1.5; }
+
+  .req-card {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(7,21,46,0.7);
+    backdrop-filter: blur(14px);
+    overflow: hidden; position: relative;
+  }
+  .req-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+    opacity: 0.35;
+  }
+
+  .req-card-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 15px 24px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--white-dim);
+  }
+  .dot-c { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  .req-form { padding: 28px 28px; }
+
+  .section { margin-bottom: 32px; }
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.56rem; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, rgba(201,168,76,0.2), transparent);
+  }
+
+  .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .fields-row.cols-1 { grid-template-columns: 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.56rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--white-dim);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .field-required { color: var(--cyan); }
+
+  .field-wrap { position: relative; }
+  .field-icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 0.85rem; opacity: 0.38; pointer-events: none; line-height: 1;
+  }
+  .field-icon-top { top: 14px; transform: none; }
+
+  .field-input, .field-select {
+    width: 100%;
+    padding: 11px 12px 11px 38px;
+    background: rgba(3,7,30,0.7);
+    border: 1px solid rgba(0,212,255,0.1);
+    border-radius: 6px;
+    color: var(--white);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.84rem; font-weight: 300;
+    outline: none; transition: all 0.25s;
+    -webkit-appearance: none;
+  }
+  .field-input::placeholder { color: rgba(240,244,255,0.2); }
+  .field-input:focus, .field-select:focus {
+    border-color: rgba(0,212,255,0.35);
+    background: rgba(0,212,255,0.03);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.07);
+  }
+  .field-input:disabled {
+    opacity: 0.5; cursor: not-allowed;
+    background: rgba(3,7,30,0.4);
+  }
+  .field-select { cursor: pointer; }
+  .field-select option { background: #07152e; }
+
+  .field-select-wrap { position: relative; }
+  .field-select-wrap::after {
+    content: '▾'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 0.75rem; color: var(--white-dim); pointer-events: none;
+  }
+
+  .field-hint {
+    font-size: 0.7rem; color: rgba(240,244,255,0.32);
+    padding-left: 2px;
+  }
+
+  .status-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .status-card input[type="radio"] { display: none; }
+  .status-card label {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(0,212,255,0.1); border-radius: 6px;
+    background: rgba(3,7,30,0.5); cursor: pointer;
+    transition: all 0.25s; font-size: 0.8rem;
+  }
+  .status-card label:hover { border-color: rgba(0,212,255,0.25); background: rgba(0,212,255,0.04); }
+  .status-card input:checked + label {
+    border-color: var(--cyan-dim);
+    background: rgba(0,212,255,0.07);
+    box-shadow: 0 0 0 2px rgba(0,212,255,0.1);
+    color: var(--white);
+  }
+  .status-card-icon { font-size: 1.1rem; }
+  .status-card-text { font-weight: 400; color: var(--white-dim); font-size: 0.78rem; }
+  .status-card input:checked + label .status-card-text { color: var(--cyan); }
+
+  /* File upload amélioré */
+  .file-upload-area {
+    border: 1.5px dashed rgba(0,212,255,0.2);
+    border-radius: 8px;
+    background: rgba(0,212,255,0.02);
+    transition: all 0.3s;
+    overflow: hidden;
+  }
+  .file-upload-area:hover { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.05); }
+  .file-upload-area.has-file { border-color: rgba(0,229,160,0.4); background: rgba(0,229,160,0.03); }
+  
+  .file-drop {
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+  }
+  .file-drop input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .file-drop-icon { font-size: 1.6rem; margin-bottom: 8px; }
+  .file-drop-label { font-size: 0.8rem; color: var(--white-dim); margin-bottom: 4px; }
+  .file-drop-sub { font-size: 0.68rem; color: rgba(240,244,255,0.3); }
+  
+  .file-info {
+    padding: 12px 20px;
+    background: rgba(0,212,255,0.05);
+    border-top: 1px solid rgba(0,212,255,0.1);
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .file-info.show { display: flex; }
+  .file-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--cyan);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .file-size {
+    font-size: 0.65rem;
+    color: var(--white-dim);
+  }
+  .file-remove {
+    background: rgba(255,77,109,0.15);
+    border: none;
+    border-radius: 4px;
+    padding: 4px 12px;
+    color: var(--red);
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .file-remove:hover {
+    background: rgba(255,77,109,0.3);
+  }
+
+  .warning-box {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(201,168,76,0.2);
+    background: rgba(201,168,76,0.04);
+    font-size: 0.78rem; line-height: 1.65; color: var(--white-dim);
+  }
+  .warning-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+  .form-actions { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+
+  .btn-submit {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 28px;
+    background: linear-gradient(135deg, var(--green), #00b87a);
+    border: none; border-radius: 6px;
+    color: var(--navy);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem; font-weight: 600; letter-spacing: 0.06em;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: all 0.3s;
+  }
+  .btn-submit:hover {
+    box-shadow: 0 0 30px rgba(0,229,160,0.4); transform: translateY(-1px);
+  }
+
+  .btn-cancel {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 12px 22px;
+    background: transparent;
+    border: 1px solid var(--border); border-radius: 6px;
+    color: var(--white-dim);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.82rem; text-decoration: none;
+    transition: all 0.25s;
+  }
+  .btn-cancel:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  @media (max-width: 700px) {
+    .fields-row { grid-template-columns: 1fr; }
+    .status-cards { grid-template-columns: 1fr; }
+    .req-form { padding: 20px 16px; }
+  }
+
+  .error-message {
+    color: var(--red);
+    font-size: 0.7rem;
+    margin-top: 5px;
+    display: none;
+  }
+  .error-message.show { display: block; }
+</style>
+
+<div class="req-wrap">
+
+  <div class="req-hero">
+    <div class="req-hero-icon">📜</div>
+    <div class="req-hero-text">
+      <div class="req-hero-eyebrow">Nouvelle demande</div>
+      <div class="req-hero-title">Demande de certificat numérique</div>
+      <div class="req-hero-sub">
+        Remplissez ce formulaire pour soumettre votre demande à l'administration de l'Université de Yaoundé I.
+        Vos informations seront vérifiées avant la délivrance de votre certificat X.509.
+      </div>
+    </div>
+  </div>
+
+  <div class="req-card">
+    <div class="req-card-header">
+      <span class="dot-c dot-green"></span>
+      Formulaire de demande
+    </div>
+
+    <form class="req-form" method="POST" enctype="multipart/form-data" id="certRequestForm">
+
+      <div class="section">
+        <div class="section-label">Identité</div>
+        <div class="fields-row">
+          <div class="field">
+            <label class="field-label">Matricule <span class="field-required">*</span></label>
+            <div class="field-wrap">
+              <span class="field-icon">🪪</span>
+              <input class="field-input" type="text" name="matricule"
+                     value="{{ current_user.matricule }}" placeholder="ex : 23M0123" required>
+            </div>
+            <div class="field-hint">Votre numéro d'étudiant ou d'employé de l'Université</div>
+          </div>
+          <div class="field">
+            <label class="field-label">Nom complet <span class="field-required">*</span></label>
+            <div class="field-wrap">
+              <span class="field-icon">👤</span>
+              <input class="field-input" type="text" name="full_name"
+                     value="{{ current_user.full_name }}" placeholder="ex : Alice Kamga" required>
+            </div>
+          </div>
+        </div>
+        <div class="fields-row" style="margin-top:14px">
+          <div class="field">
+            <label class="field-label">Âge</label>
+            <div class="field-wrap">
+              <span class="field-icon">📅</span>
+              <input class="field-input" type="number" name="age"
+                     value="{{ current_user.age }}" placeholder="ex : 22" min="16" max="80">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Email</label>
+            <div class="field-wrap">
+              <span class="field-icon">✉️</span>
+              <input class="field-input" type="email" value="{{ current_user.email }}" readonly disabled>
+            </div>
+            <div class="field-hint">Pré-rempli depuis votre profil</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Affiliation universitaire</div>
+        <div class="fields-row cols-1">
+          <div class="field">
+            <label class="field-label">Département / Filière <span class="field-required">*</span></label>
+            <div class="field-wrap">
+              <span class="field-icon">🏫</span>
+              <input class="field-input" type="text" name="department"
+                     value="{{ current_user.department }}" placeholder="ex : Master 1 Sécurité des Systèmes Informatiques" required>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px;">
+          <div class="field-label" style="margin-bottom: 10px;">Statut <span class="field-required">*</span></div>
+          <div class="status-cards">
+            <div class="status-card">
+              <input type="radio" id="st_etudiant" name="status_type" value="etudiant"
+                     {% if current_user.status_type == 'etudiant' %}checked{% endif %}>
+              <label for="st_etudiant">
+                <span class="status-card-icon">🎓</span>
+                <span class="status-card-text">Étudiant</span>
+              </label>
+            </div>
+            <div class="status-card">
+              <input type="radio" id="st_enseignant" name="status_type" value="enseignant"
+                     {% if current_user.status_type == 'enseignant' %}checked{% endif %}>
+              <label for="st_enseignant">
+                <span class="status-card-icon">👨‍🏫</span>
+                <span class="status-card-text">Enseignant</span>
+              </label>
+            </div>
+            <div class="status-card">
+              <input type="radio" id="st_personnel" name="status_type" value="personnel"
+                     {% if current_user.status_type == 'personnel' %}checked{% endif %}>
+              <label for="st_personnel">
+                <span class="status-card-icon">👔</span>
+                <span class="status-card-text">Personnel administratif</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Pièce justificative</div>
+        <div class="file-upload-area" id="fileUploadArea">
+          <div class="file-drop">
+            <input type="file" name="justification_file" id="justificationFile" accept=".pdf,.png,.jpg,.jpeg">
+            <div class="file-drop-icon">📎</div>
+            <div class="file-drop-label">Glissez votre fichier ici ou cliquez pour parcourir</div>
+            <div class="file-drop-sub">Carte d'étudiant, attestation de fonction… PDF, JPG, PNG — max 5 Mo</div>
+          </div>
+          <div class="file-info" id="fileInfo">
+            <div class="file-name">
+              <span>📄</span>
+              <span id="fileName"></span>
+            </div>
+            <div class="file-size" id="fileSize"></div>
+            <button type="button" class="file-remove" id="removeFileBtn">✕ Supprimer</button>
+          </div>
+        </div>
+        <div class="error-message" id="fileError">
+          ⚠️ Fichier non valide. Formats acceptés : PDF, PNG, JPG, JPEG. Taille max : 5 Mo.
+        </div>
+      </div>
+
+      <div class="warning-box" style="margin-bottom: 24px;">
+        <div class="warning-icon">⚠️</div>
+        <div>
+          En soumettant ce formulaire, vous certifiez sur l'honneur que toutes les informations fournies sont exactes et conformes à votre situation réelle à l'Université de Yaoundé I.
+          L'administration se réserve le droit de demander des pièces justificatives complémentaires avant toute délivrance de certificat.
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-submit" id="submitBtn">📨 Envoyer ma demande</button>
+        <a href="{{ url_for('dashboard_user') }}" class="btn-cancel">✕ Annuler</a>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+
+<script>
+  const fileInput = document.getElementById('justificationFile');
+  const fileInfo = document.getElementById('fileInfo');
+  const fileNameSpan = document.getElementById('fileName');
+  const fileSizeSpan = document.getElementById('fileSize');
+  const removeBtn = document.getElementById('removeFileBtn');
+  const fileError = document.getElementById('fileError');
+  const fileUploadArea = document.getElementById('fileUploadArea');
+  const submitBtn = document.getElementById('submitBtn');
+  
+  const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
+  const ALLOWED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg'];
+  
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+  
+  function getFileExtension(filename) {
+    return filename.split('.').pop().toLowerCase();
+  }
+  
+  function validateFile(file) {
+    if (!file) return { valid: false, error: null };
+    
+    const extension = getFileExtension(file.name);
+    if (!ALLOWED_EXTENSIONS.includes(extension)) {
+      return { valid: false, error: 'Format non autorisé. Utilisez PDF, PNG, JPG ou JPEG.' };
+    }
+    
+    if (file.size > MAX_SIZE) {
+      return { valid: false, error: 'Fichier trop volumineux. Maximum 5 Mo.' };
+    }
+    
+    return { valid: true, error: null };
+  }
+  
+  function updateFileDisplay(file) {
+    if (file && file.name) {
+      fileNameSpan.textContent = file.name;
+      fileSizeSpan.textContent = formatFileSize(file.size);
+      fileInfo.classList.add('show');
+      fileUploadArea.classList.add('has-file');
+      fileError.classList.remove('show');
+    } else {
+      fileInfo.classList.remove('show');
+      fileUploadArea.classList.remove('has-file');
+    }
+  }
+  
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    
+    if (!file) {
+      updateFileDisplay(null);
+      return;
+    }
+    
+    const validation = validateFile(file);
+    
+    if (!validation.valid) {
+      fileError.textContent = '⚠️ ' + validation.error;
+      fileError.classList.add('show');
+      fileInput.value = '';
+      updateFileDisplay(null);
+      return;
+    }
+    
+    fileError.classList.remove('show');
+    updateFileDisplay(file);
+  });
+  
+  removeBtn.addEventListener('click', function() {
+    fileInput.value = '';
+    updateFileDisplay(null);
+  });
+  
+  // Drag & Drop support
+  const dropZone = document.querySelector('.file-drop');
+  
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+  
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+  });
+  
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+  });
+  
+  function highlight() {
+    dropZone.style.borderColor = 'var(--cyan)';
+    dropZone.style.background = 'rgba(0,212,255,0.08)';
+  }
+  
+  function unhighlight() {
+    dropZone.style.borderColor = '';
+    dropZone.style.background = '';
+  }
+  
+  dropZone.addEventListener('drop', function(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+      fileInput.files = files;
+      const changeEvent = new Event('change', { bubbles: true });
+      fileInput.dispatchEvent(changeEvent);
+    }
+  });
+  
+  // Validation du formulaire avant soumission
+  document.getElementById('certRequestForm').addEventListener('submit', function(e) {
+    const matricule = document.querySelector('input[name="matricule"]').value.trim();
+    const fullName = document.querySelector('input[name="full_name"]').value.trim();
+    const department = document.querySelector('input[name="department"]').value.trim();
+    
+    if (!matricule) {
+      e.preventDefault();
+      flash('Veuillez renseigner votre matricule.', 'danger');
+      return false;
+    }
+    
+    if (!fullName) {
+      e.preventDefault();
+      flash('Veuillez renseigner votre nom complet.', 'danger');
+      return false;
+    }
+    
+    if (!department) {
+      e.preventDefault();
+      flash('Veuillez renseigner votre département/filière.', 'danger');
+      return false;
+    }
+    
+    // Le fichier est optionnel, on ne bloque pas s'il n'y en a pas
+    return true;
+  });
+  
+  function flash(message, category) {
+    const flashDiv = document.createElement('div');
+    flashDiv.className = `alert alert-${category}`;
+    flashDiv.textContent = message;
+    flashDiv.style.position = 'fixed';
+    flashDiv.style.top = '20px';
+    flashDiv.style.right = '20px';
+    flashDiv.style.zIndex = '9999';
+    flashDiv.style.padding = '12px 20px';
+    flashDiv.style.borderRadius = '8px';
+    flashDiv.style.background = category === 'danger' ? '#ff4d6d' : '#00e5a0';
+    flashDiv.style.color = '#03071e';
+    flashDiv.style.fontWeight = '500';
+    document.body.appendChild(flashDiv);
+    setTimeout(() => flashDiv.remove(), 3000);
+  }
+</script>
+{% endblock %}

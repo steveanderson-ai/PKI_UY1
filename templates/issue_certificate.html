@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Émettre un certificat — PKI{% endblock %}
+{% block page_title %}📜 Émettre un certificat{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+  <div class="card-header">
+    <div class="card-title"><span class="dot" style="background: var(--green);"></span> Nouveau certificat</div>
+  </div>
+  <form method="POST">
+    <div class="form-group">
+      <label class="form-label">Nom commun (CN) *</label>
+      <input class="form-control" type="text" name="common_name" placeholder="Ex: Alice Kamga" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-control" type="email" name="email" placeholder="alice@example.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Organisation</label>
+      <input class="form-control" type="text" name="organisation" placeholder="Université de Yaoundé I">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Validité</label>
+      <input class="form-control" type="text" value="365 jours (standard)" disabled>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+      📜 Émettre le certificat
+    </button>
+  </form>
+</div>
+{% endblock %}

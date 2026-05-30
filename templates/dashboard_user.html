@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord — PKI Université de Yaoundé I{% endblock %}
+{% block page_title %}Tableau de bord étudiant{% endblock %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap');
+
+  :root {
+    --navy:        #03071e;
+    --navy-2:      #07152e;
+    --navy-3:      #0d2046;
+    --cyan:        #00d4ff;
+    --cyan-dim:    #00a8cc;
+    --cyan-pale:   rgba(0,212,255,0.07);
+    --gold:        #c9a84c;
+    --gold-dim:    rgba(201,168,76,0.15);
+    --green:       #00e5a0;
+    --green-dim:   rgba(0,229,160,0.1);
+    --red:         #ff4d6d;
+    --red-dim:     rgba(255,77,109,0.1);
+    --white:       #f0f4ff;
+    --white-dim:   rgba(240,244,255,0.5);
+    --white-faint: rgba(240,244,255,0.07);
+    --border:      rgba(0,212,255,0.1);
+  }
+
+  .db-wrap {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    color: var(--white);
+    display: flex; flex-direction: column; gap: 24px;
+  }
+
+  /* ── BANNIÈRE CA ── */
+  .ca-banner {
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    padding: 24px 28px;
+    border-radius: 10px;
+    border: 1px solid rgba(201,168,76,0.25);
+    background: linear-gradient(130deg, rgba(13,32,70,0.9), rgba(7,21,46,0.95));
+    position: relative; overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+  .ca-banner::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.6;
+  }
+  .ca-banner-seal {
+    width: 64px; height: 64px; flex-shrink: 0;
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    background: var(--gold-dim);
+    position: relative;
+  }
+  .ca-banner-seal::after {
+    content: '';
+    position: absolute; inset: -6px; border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.18);
+  }
+  .ca-banner-info { flex: 1; min-width: 200px; }
+  .ca-banner-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.25em;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .ca-banner-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem; font-weight: 600;
+    color: var(--white); margin-bottom: 4px;
+  }
+  .ca-banner-sub {
+    font-size: 0.75rem; color: var(--white-dim); margin-bottom: 6px;
+  }
+  .ca-fingerprint {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem; color: var(--gold);
+    background: rgba(201,168,76,0.08);
+    padding: 4px 10px; border-radius: 4px;
+    border: 1px solid rgba(201,168,76,0.15);
+    display: inline-block;
+  }
+  .ca-banner-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  /* ── ALERT ── */
+  .alert-pending {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(201,168,76,0.3);
+    background: rgba(201,168,76,0.05);
+    font-size: 0.84rem; line-height: 1.6; color: var(--white-dim);
+    animation: fadeUp 0.5s ease 0.05s both;
+  }
+  .alert-pending-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; animation: spin 3s linear infinite; }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  .alert-pending strong { color: var(--gold); }
+  .alert-pending code {
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    color: var(--cyan); background: rgba(0,212,255,0.08);
+    padding: 1px 6px; border-radius: 3px;
+  }
+
+  /* ── GRILLE 2 COL ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  /* ── CARD ── */
+  .db-card {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(7,21,46,0.7);
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+    position: relative;
+    animation: fadeUp 0.5s ease calc(0.1s * var(--ci, 1)) both;
+  }
+  .db-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+    opacity: 0.4;
+  }
+
+  .db-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .db-card-title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.22em;
+    color: var(--white-dim); text-transform: uppercase;
+  }
+  .dot-c { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-cyan { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+  .dot-gold { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  .db-card-body { padding: 22px; }
+
+  /* ── BOUTONS ── */
+  .btn-xs {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 5px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em;
+    text-decoration: none; cursor: pointer; border: none;
+    transition: all 0.25s; white-space: nowrap;
+  }
+  .btn-gold { background: linear-gradient(135deg, var(--gold), #a07c2a); color: #03071e; }
+  .btn-gold:hover { box-shadow: 0 0 18px rgba(201,168,76,0.4); transform: translateY(-1px); }
+  .btn-ghost-gold { background: transparent; border: 1px solid rgba(201,168,76,0.3); color: var(--gold); }
+  .btn-ghost-gold:hover { background: var(--gold-dim); border-color: var(--gold); }
+  .btn-cyan { background: linear-gradient(135deg, var(--cyan), var(--cyan-dim)); color: var(--navy); }
+  .btn-cyan:hover { box-shadow: 0 0 18px rgba(0,212,255,0.45); transform: translateY(-1px); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--white-dim); }
+  .btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); }
+  .btn-green { background: linear-gradient(135deg, var(--green), #00b87a); color: var(--navy); }
+  .btn-green:hover { box-shadow: 0 0 18px rgba(0,229,160,0.4); transform: translateY(-1px); }
+
+  /* ── TABLE CERTIFICATS ── */
+  .cert-table { width: 100%; border-collapse: collapse; }
+  .cert-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--white-dim); padding: 0 0 12px 0;
+    border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .cert-table td {
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.05);
+    font-size: 0.82rem; color: var(--white-dim);
+    vertical-align: top;
+  }
+  .cert-table tr:last-child td { border-bottom: none; }
+  .cert-name { font-weight: 500; color: var(--white); font-size: 0.85rem; }
+  .cert-serial {
+    font-family: 'DM Mono', monospace; font-size: 0.6rem;
+    color: var(--cyan); opacity: 0.7; margin-top: 2px;
+  }
+  .cert-warn { color: var(--gold); }
+  .cert-ok { color: var(--green); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 48px 20px; text-align: center; gap: 12px;
+  }
+  .empty-icon {
+    width: 60px; height: 60px;
+    border-radius: 12px;
+    background: rgba(0,212,255,0.06);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; margin-bottom: 4px;
+  }
+  .empty-text { font-size: 0.83rem; color: var(--white-dim); }
+
+  /* ── INFOS UTILISATEUR ── */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .info-cell {
+    padding: 13px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.05);
+  }
+  .info-cell:nth-child(odd) { padding-right: 20px; }
+  .info-cell-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.55rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--white-dim); margin-bottom: 4px;
+  }
+  .info-cell-value { font-size: 0.84rem; color: var(--white); font-weight: 400; }
+  .info-cell:last-child, .info-cell:nth-last-child(2) { border-bottom: none; }
+
+  /* ── À PROPOS PKI ── */
+  .pki-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .pki-item {
+    padding: 20px;
+    border-radius: 8px;
+    background: rgba(0,212,255,0.03);
+    border: 1px solid rgba(0,212,255,0.08);
+    transition: all 0.3s;
+  }
+  .pki-item:hover { border-color: rgba(0,212,255,0.2); background: rgba(0,212,255,0.05); }
+  .pki-item-icon {
+    font-size: 1.4rem; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    border-radius: 8px; background: rgba(0,212,255,0.07);
+  }
+  .pki-item-title {
+    font-family: 'Outfit', sans-serif; font-size: 0.82rem; font-weight: 500;
+    color: var(--cyan); margin-bottom: 8px;
+  }
+  .pki-item-text { font-size: 0.76rem; line-height: 1.7; color: var(--white-dim); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 800px) {
+    .two-col { grid-template-columns: 1fr; }
+    .pki-grid { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: 1fr; }
+    .ca-banner { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+
+<div class="db-wrap">
+
+  <!-- Bannière CA -->
+  <div class="ca-banner">
+    <div class="ca-banner-seal">🏛️</div>
+    <div class="ca-banner-info">
+      <div class="ca-banner-title">Autorité de Certification officielle</div>
+      <div class="ca-banner-name">Université de Yaoundé I</div>
+      <div class="ca-banner-sub">INF4268 Cryptographie Asymétrique — Master 1 SSI</div>
+      {% if ca %}
+      <div class="ca-fingerprint">🔐 Empreinte CA : {{ ca.fingerprint[:48] }}…</div>
+      {% endif %}
+    </div>
+    <div class="ca-banner-actions">
+      <a href="{{ url_for('download_ca_cert') }}" class="btn-xs btn-gold">⬇ Certificat Université</a>
+      <a href="{{ url_for('user_print_ca') }}" target="_blank" class="btn-xs btn-ghost-gold">🖨 PDF officiel</a>
+    </div>
+  </div>
+
+  <!-- Alerte demande en cours -->
+  {% if pending_request %}
+  <div class="alert-pending">
+    <div class="alert-pending-icon">⏳</div>
+    <div>
+      <strong>Demande en cours de traitement</strong> —
+      Votre demande <code>{{ pending_request.request_number }}</code> est en cours de vérification par l'administration de l'Université de Yaoundé I.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Grille principale -->
+  <div class="two-col">
+
+    <!-- Mes certificats -->
+    <div class="db-card" style="--ci:1">
+      <div class="db-card-header">
+        <div class="db-card-title">
+          <span class="dot-c dot-green"></span>
+          Mes certificats actifs
+        </div>
+        {% if not pending_request %}
+        <a href="{{ url_for('request_certificate') }}" class="btn-xs btn-green">📝 Faire une demande</a>
+        {% endif %}
+      </div>
+      <div class="db-card-body">
+        {% if my_certs %}
+        <table class="cert-table">
+          <thead>
+            <tr>
+              <th>Certificat</th>
+              <th>Émission</th>
+              <th>Expiration</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cert in my_certs %}
+            <tr>
+              <td>
+                <div class="cert-name">{{ cert.common_name }}</div>
+                <div class="cert-serial">Série : {{ cert.serial_hex }}</div>
+              </td>
+              <td>{{ cert.issued_at.strftime('%d/%m/%Y') }}</td>
+              <td>
+                {% if cert.days_until_expiry() < 30 %}
+                <span class="cert-warn">⚠ {{ cert.expires_at.strftime('%d/%m/%Y') }}</span>
+                {% else %}
+                <span class="cert-ok">{{ cert.expires_at.strftime('%d/%m/%Y') }}</span>
+                {% endif %}
+              </td>
+              <td><a href="{{ url_for('download_cert', cert_id=cert.id) }}" class="btn-xs btn-ghost">⬇</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">📜</div>
+          <div class="empty-text">Aucun certificat actif pour le moment.</div>
+          {% if not pending_request %}
+          <a href="{{ url_for('request_certificate') }}" class="btn-xs btn-cyan" style="margin-top:8px;">📝 Faire une demande</a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Mes informations -->
+    <div class="db-card" style="--ci:2">
+      <div class="db-card-header">
+        <div class="db-card-title">
+          <span class="dot-c dot-cyan"></span>
+          Mes informations
+        </div>
+      </div>
+      <div class="db-card-body">
+        <div class="info-grid">
+          <div class="info-cell">
+            <div class="info-cell-label">Nom complet</div>
+            <div class="info-cell-value">{{ current_user.full_name }}</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-cell-label">Matricule</div>
+            <div class="info-cell-value">{{ current_user.matricule or "—" }}</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-cell-label">Statut</div>
+            <div class="info-cell-value">{{ current_user.get_status_label() }}</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-cell-label">Département</div>
+            <div class="info-cell-value">{{ current_user.department or "—" }}</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-cell-label">Email</div>
+            <div class="info-cell-value">{{ current_user.email }}</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-cell-label">Membre depuis</div>
+            <div class="info-cell-value">{{ current_user.created_at.strftime('%d/%m/%Y') }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- À propos de la PKI -->
+  <div class="db-card" style="--ci:3">
+    <div class="db-card-header">
+      <div class="db-card-title">
+        <span class="dot-c dot-gold"></span>
+        À propos de l'infrastructure PKI
+      </div>
+    </div>
+    <div class="db-card-body">
+      <div class="pki-grid">
+        <div class="pki-item">
+          <div class="pki-item-icon">🏛️</div>
+          <div class="pki-item-title">Autorité de Certification</div>
+          <div class="pki-item-text">L'Université de Yaoundé I est l'unique autorité habilitée à délivrer des certificats numériques pour ses membres.</div>
+        </div>
+        <div class="pki-item">
+          <div class="pki-item-icon">🔐</div>
+          <div class="pki-item-title">Sécurité RSA-2048</div>
+          <div class="pki-item-text">Certificats X.509 v3 avec chiffrement RSA-2048 et signature SHA-256, conformes aux standards RFC 5280.</div>
+        </div>
+        <div class="pki-item">
+          <div class="pki-item-icon">📋</div>
+          <div class="pki-item-title">Utilisation</div>
+          <div class="pki-item-text">Prouvez votre identité auprès des services numériques de l'Université et signez électroniquement vos documents.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

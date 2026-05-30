@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Demandes en attente — Université de Yaoundé I{% endblock %}
+{% block page_title %}Gestion des demandes de certificat{% endblock %}
+
+{% block content %}
+<style>
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
+  .modal-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--cyan);
+  }
+  .modal-desc { margin-bottom: 16px; color: var(--text2); }
+  .modal-btns {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+</style>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <span class="dot dot-gold"></span>
+      DEMANDES À TRAITER ({{ requests|selectattr('status', 'equalto', 'PENDING')|list|length }})
+    </div>
+  </div>
+  <div class="card-body">
+    {% if requests %}
+      {% for req in requests %}
+      <div id="req-{{ req.id }}" class="request-card" style="background: var(--card2); border-radius: 12px; margin-bottom: 20px; padding: 20px; border: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; margin-bottom: 16px;">
+          <div>
+            <h3 style="color: var(--cyan); margin-bottom: 4px;">DEMANDE #{{ req.request_number }}</h3>
+            <p style="color: var(--text2); font-size: 0.8rem;">Reçue le {{ req.created_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+          </div>
+          <div>
+            {% if req.status == 'PENDING' %}
+            <span class="badge badge-pending" style="background: rgba(201,168,76,0.15); color: var(--gold);">⏳ EN ATTENTE</span>
+            {% elif req.status == 'APPROVED' %}
+            <span class="badge badge-approved" style="background: rgba(0,224,150,0.15); color: var(--green);">✅ APPROUVÉE</span>
+            {% else %}
+            <span class="badge badge-rejected" style="background: rgba(255,59,92,0.15); color: var(--red);">❌ REJETÉE</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+          <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px;">
+            <div style="font-family: monospace; font-size: 0.65rem; color: var(--muted); text-transform: uppercase;">Demandeur</div>
+            <div><strong>{{ req.full_name }}</strong></div>
+            <div class="mono" style="font-size: 0.8rem;">Matricule: {{ req.matricule }}</div>
+            <div>📧 {{ req.requester.email }}</div>
+            <div>🎂 {{ req.age }} ans</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px;">
+            <div style="font-family: monospace; font-size: 0.65rem; color: var(--muted); text-transform: uppercase;">Informations académiques</div>
+            <div><strong>{{ req.get_status_label() }}</strong></div>
+            <div>🏫 {{ req.department }}</div>
+            {% if req.justification_file %}
+            <div style="margin-top: 8px;">
+              📎 <a href="{{ url_for('download_request_file', req_id=req.id) }}" 
+                    style="color: var(--cyan); text-decoration: none; font-family: monospace; font-size: 0.7rem;"
+                    target="_blank">
+                  {{ req.justification_file }}
+              </a>
+            </div>
+            {% else %}
+            <div style="margin-top: 8px;">
+              <span style="color: var(--muted); font-size: 0.7rem;">📎 Aucune pièce jointe</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if req.status == 'PENDING' %}
+        <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;">
+          <div class="form-group">
+            <label class="form-label">📝 Notes internes (vérifications effectuées)</label>
+            <textarea id="notes-{{ req.id }}" class="form-control" rows="2" placeholder="ex: Matricule vérifié dans le registre, paiement OK reçu #12345, pièce conforme..."></textarea>
+          </div>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <form method="POST" action="{{ url_for('approve_request', req_id=req.id) }}" style="display: inline;">
+              <input type="hidden" name="admin_notes" id="notes-field-{{ req.id }}">
+              <button type="submit" class="btn btn-green" onclick="document.getElementById('notes-field-{{ req.id }}').value = document.getElementById('notes-{{ req.id }}').value">✅ APPROUVER ET ÉMETTRE LE CERTIFICAT</button>
+            </form>
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('reject-modal-{{ req.id }}').classList.add('open')">❌ REJETER</button>
+          </div>
+        </div>
+
+        <!-- Modal de rejet -->
+        <div id="reject-modal-{{ req.id }}" class="modal-overlay">
+          <div class="modal-box">
+            <div class="modal-title">❌ Rejeter la demande</div>
+            <div class="modal-desc">Veuillez indiquer la raison du rejet :</div>
+            <form method="POST" action="{{ url_for('reject_request', req_id=req.id) }}">
+              <textarea name="reject_reason" class="form-control" rows="3" placeholder="Motif du rejet..." required></textarea>
+              <div class="modal-btns">
+                <button type="submit" class="btn btn-red">Confirmer le rejet</button>
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('reject-modal-{{ req.id }}').classList.remove('open')">Annuler</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% elif req.status == 'APPROVED' and req.certificate %}
+        <div style="background: rgba(0,224,150,0.05); border-radius: 8px; padding: 12px;">
+          <div style="color: var(--green);">✅ Certificat émis le {{ req.processed_at.strftime('%d/%m/%Y') }}</div>
+          <div class="mono" style="font-size: 0.75rem;">Série: {{ req.certificate.serial_hex }}</div>
+          <div class="mono" style="font-size: 0.75rem;">Valide jusqu'au: {{ req.certificate.expires_at.strftime('%d/%m/%Y') }}</div>
+        </div>
+        {% elif req.status == 'REJECTED' %}
+        <div style="background: rgba(255,59,92,0.05); border-radius: 8px; padding: 12px;">
+          <div style="color: var(--red);">❌ Rejetée le {{ req.processed_at.strftime('%d/%m/%Y') }}</div>
+          <div style="font-size: 0.8rem;">Motif: {{ req.reject_reason }}</div>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 60px;">
+      <div style="font-size: 4rem; margin-bottom: 16px;">📋</div>
+      <h3 style="color: var(--text2);">Aucune demande à traiter</h3>
+      <p style="color: var(--muted);">Toutes les demandes ont été traitées.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.remove('open');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Mon profil — Université de Yaoundé I{% endblock %}
+{% block page_title %}Mon profil{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="dot dot-cyan"></span>
+        INFORMATIONS PERSONNELLES
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 24px;">
+        <div class="user-avatar" style="width: 80px; height: 80px; font-size: 1.8rem; background: {{ current_user.avatar_color }};">{{ current_user.initials() }}</div>
+        <div>
+          <h2 style="color: var(--cyan);">{{ current_user.full_name }}</h2>
+          <p class="mono">{{ current_user.username }}</p>
+          <p>{% if current_user.is_admin() %}🏛️ Administrateur Université{% else %}{{ current_user.get_status_label() }}{% endif %}</p>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-item">
+          <div class="info-item-label">Matricule / N° Employé</div>
+          <div class="info-item-value">{{ current_user.matricule or "Non renseigné" }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Âge</div>
+          <div class="info-item-value">{{ current_user.age or "Non renseigné" }} ans</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Email</div>
+          <div class="info-item-value">{{ current_user.email }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Département</div>
+          <div class="info-item-value">{{ current_user.department or "Non renseigné" }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Membre depuis</div>
+          <div class="info-item-value">{{ current_user.created_at.strftime('%d/%m/%Y') }}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Dernière connexion</div>
+          <div class="info-item-value">{{ current_user.last_login.strftime('%d/%m/%Y %H:%M') if current_user.last_login else 'Première connexion' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="dot dot-green"></span>
+        ACTIVITÉ RÉCENTE
+      </div>
+      <a href="{{ url_for('audit') }}" class="card-link">Voir tout →</a>
+    </div>
+    <div class="card-body">
+      <div class="audit-timeline">
+        {% for log in my_logs[:10] %}
+        <div class="audit-item">
+          <div class="audit-dot" style="background: {{ log.color }}20; color: {{ log.color }};">
+            {{ log.icon }}
+          </div>
+          <div class="audit-content">
+            <div class="audit-title">{{ log.title }}</div>
+            <div class="audit-detail">{{ log.details[:60] }}{% if log.details|length > 60 %}...{% endif %}</div>
+            <div class="audit-meta">{{ log.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="audit-item">
+          <div class="audit-dot">📝</div>
+          <div class="audit-content">Aucune activité récente.</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <span class="dot dot-gold"></span>
+      MES DEMANDES DE CERTIFICAT
+    </div>
+  </div>
+  <div class="card-body">
+    {% if my_requests %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>N° Demande</th><th>Date</th><th>Statut</th><th>Résultat</th></tr>
+        </thead>
+        <tbody>
+          {% for req in my_requests %}
+          <tr>
+            <td class="mono">{{ req.request_number }}</td>
+            <td>{{ req.created_at.strftime('%d/%m/%Y') }}</td>
+            <td>{% set badge = req.get_status_badge() %}<span class="badge {{ badge[1] }}">{{ badge[0] }}</span></td>
+            <td>
+              {% if req.status == 'APPROVED' %}
+              ✅ Certificat délivré
+              {% elif req.status == 'REJECTED' %}
+              ❌ {{ req.reject_reason[:50] }}
+              {% else %}
+              ⏳ En cours de traitement
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 40px;">
+      <p style="color: var(--text2);">Aucune demande de certificat effectuée.</p>
+      <a href="{{ url_for('request_certificate') }}" class="btn btn-cyan" style="margin-top: 12px;">📝 Faire une demande</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <span class="dot dot-cyan"></span>
+      MES CERTIFICATS
+    </div>
+  </div>
+  <div class="card-body">
+    {% if my_certs %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Certificat</th><th>Série</th><th>Expiration</th><th>Statut</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for cert in my_certs %}
+          <tr>
+            <td><strong>{{ cert.common_name }}</strong></td>
+            <td class="mono">{{ cert.serial_hex }}</td>
+            <td>{% if cert.days_until_expiry() < 30 %}<span class="text-gold">⚠️ {% endif %}{{ cert.expires_at.strftime('%d/%m/%Y') if cert.expires_at else '-' }}{% if cert.days_until_expiry() < 30 %}</span>{% endif %}</td>
+            <td>{% set badge = cert.status_badge() %}<span class="badge {{ badge[1] }}">{{ badge[0] }}</span></td>
+            <td><a href="{{ url_for('download_cert', cert_id=cert.id) }}" class="btn btn-outline btn-sm">⬇️</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color: var(--text2); text-align: center;">Aucun certificat reçu.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

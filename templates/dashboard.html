@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord PKI{% endblock %}
+{% block page_title %}Tableau de bord PKI{% endblock %}
+
+{% block content %}
+
+<!-- ══ STATS CARDS ══ -->
+<div class="stats-grid">
+  <!-- Total -->
+  <div class="stat-card c-cyan">
+    <div class="stat-card-top">
+      <div>
+        <div class="stat-label">Total Certificats</div>
+        <div class="stat-value">{{ total }}</div>
+        <div class="stat-sub">Tous certificats émis</div>
+      </div>
+      <div class="stat-card-icon">📄</div>
+    </div>
+    <div class="mini-bars">
+      {% for h in [40,55,35,60,45,70,50,65,45,55,75,60] %}
+      <div class="mini-bar" style="height:{{ h }}%;"></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Valides -->
+  <div class="stat-card c-green">
+    <div class="stat-card-top">
+      <div>
+        <div class="stat-label">Certificats Valides</div>
+        <div class="stat-value">{{ valid }}</div>
+        <div class="stat-sub">{{ valid_pct }}% du total</div>
+      </div>
+      <div class="stat-card-icon">✅</div>
+    </div>
+    <div class="mini-bars">
+      {% for h in [60,70,55,75,65,80,70,75,60,70,80,75] %}
+      <div class="mini-bar" style="height:{{ h }}%;"></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Révoqués -->
+  <div class="stat-card c-red">
+    <div class="stat-card-top">
+      <div>
+        <div class="stat-label">Certificats Révoqués</div>
+        <div class="stat-value">{{ revoked }}</div>
+        <div class="stat-sub">{{ revoked_pct }}% du total</div>
+      </div>
+      <div class="stat-card-icon">❌</div>
+    </div>
+    <div class="mini-bars">
+      {% for h in [20,30,15,35,25,20,30,15,25,30,20,25] %}
+      <div class="mini-bar" style="height:{{ h }}%;"></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Expirations -->
+  <div class="stat-card c-gold">
+    <div class="stat-card-top">
+      <div>
+        <div class="stat-label">Expirations Proches</div>
+        <div class="stat-value">{{ expiring }}</div>
+        <div class="stat-sub">Dans les 30 prochains jours</div>
+      </div>
+      <div class="stat-card-icon">⏰</div>
+    </div>
+    <div class="mini-bars">
+      {% for h in [30,40,25,45,35,30,40,25,35,40,30,35] %}
+      <div class="mini-bar" style="height:{{ h }}%;"></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ══ LIGNE 2 : CA + CERTIFICATS RÉCENTS ══ -->
+<div class="grid-2" style="margin-bottom:20px;">
+
+  <!-- AUTORITÉ DE CERTIFICATION -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="dot dot-cyan"></div>
+        AUTORITÉ DE CERTIFICATION
+      </div>
+      {% if ca %}
+      <div style="display:flex;gap:8px;">
+        <a href="{{ url_for('download_ca_cert') }}" class="btn btn-outline btn-sm">⬇ CA CERT</a>
+        <a href="{{ url_for('download_crl') }}" class="btn btn-outline btn-sm">⬇ CRL</a>
+      </div>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if ca %}
+      <div class="ca-panel">
+        <div class="ca-visual">
+          <div class="ca-shield">🏛</div>
+        </div>
+        <div class="ca-details">
+          <div class="ca-field">
+            <div class="ca-field-label">🏷 Nom commun (CN)</div>
+            <div class="ca-field-value text-cyan">{{ ca.name }}</div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">🏢 Organisation (O)</div>
+            <div class="ca-field-value">{{ ca.organisation }}</div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">🌍 Pays (C)</div>
+            <div class="ca-field-value">Cameroun ({{ ca.country }}) 🇨🇲</div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">📅 Validité</div>
+            <div class="ca-field-value">
+              {{ ca.valid_from.strftime('%d %b %Y') if ca.valid_from else '—' }}
+              — {{ ca.valid_until.strftime('%d %b %Y') if ca.valid_until else '—' }}
+            </div>
+          </div>
+          <div class="ca-field">
+            <div class="ca-field-label">🔐 Algorithme</div>
+            <div class="ca-field-value">{{ ca.algorithm }}</div>
+          </div>
+          {% if ca.fingerprint %}
+          <div class="ca-field">
+            <div class="ca-field-label">🔎 Empreinte (SHA-256)</div>
+            <div class="ca-fingerprint">{{ ca.fingerprint[:48] }}<br>{{ ca.fingerprint[48:] }}</div>
+          </div>
+          {% endif %}
+          <div class="ca-buttons">
+            <a href="{{ url_for('download_ca_cert') }}" class="btn btn-cyan btn-sm">⬇ TÉLÉCHARGER CA CERT</a>
+            <a href="{{ url_for('download_crl') }}" class="btn btn-outline btn-sm" style="border-color:var(--purple);color:var(--purple);">⬇ TÉLÉCHARGER CRL</a>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:40px 20px;">
+        <div style="font-size:2.5rem;margin-bottom:14px;">⚠️</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:8px;">Aucune AC configurée</div>
+        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px;">
+          Un administrateur doit initialiser l'Autorité de Certification pour démarrer.
+        </p>
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('admin') }}" class="btn btn-gold">⚙ Créer l'AC maintenant</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- CERTIFICATS RÉCENTS -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="dot dot-green"></div>
+        CERTIFICATS RÉCENTS
+      </div>
+      <a href="{{ url_for('certificates') }}" class="card-link">Voir tout ›</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>SÉRIE</th>
+            <th>NOM COMMUN</th>
+            <th>ÉMIS LE</th>
+            <th>EXPIRE LE</th>
+            <th>STATUT</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in recent %}
+          <tr>
+            <td class="mono text-cyan" style="font-size:0.78rem;">{{ c.serial_hex }}</td>
+            <td style="font-weight:600;">{{ c.common_name }}</td>
+            <td class="mono text-muted" style="font-size:0.76rem;">{{ c.issued_at.strftime('%d %b %Y') }}</td>
+            <td class="mono text-muted" style="font-size:0.76rem;">{{ c.expires_at.strftime('%d %b %Y') if c.expires_at else '—' }}</td>
+            <td>
+              {% if c.status == 'VALID' %}
+              <span class="badge badge-valid">✓ VALIDE</span>
+              {% elif c.status == 'REVOKED' %}
+              <span class="badge badge-revoked">✗ RÉVOQUÉ</span>
+              {% else %}
+              <span class="badge badge-expired">⚠ EXPIRÉ</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">
+              Aucun certificat émis pour l'instant.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if recent %}
+    <div style="padding:0 0 4px;">
+      <a href="{{ url_for('certificates') }}" class="view-all-btn">
+        Voir tous les certificats <span>›</span>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ══ LIGNE 3 : JOURNAL + ACTIONS RAPIDES ══ -->
+<div class="grid-2">
+
+  <!-- JOURNAL D'AUDIT -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="dot dot-purple"></div>
+        JOURNAL D'AUDIT
+      </div>
+      <a href="{{ url_for('audit') }}" class="card-link">Voir tout ›</a>
+    </div>
+    <div class="card-body" style="padding:16px 20px;">
+      <div class="audit-timeline">
+        {% for log in logs %}
+        <div class="audit-item">
+          <div class="audit-dot" style="background:{{ log.color }}22;border:1px solid {{ log.color }}44;">
+            {{ log.icon }}
+          </div>
+          <div class="audit-content">
+            <div class="audit-title">{{ log.title }}</div>
+            <div class="audit-detail">{{ log.details }}</div>
+            <div class="audit-meta">
+              <span>{{ log.created_at.strftime('%d %b %Y, %H:%M:%S') }}</span>
+              <span>·</span>
+              <span style="color:{{ log.color }};">{{ log.username }}</span>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:30px;color:var(--muted);">Aucune activité enregistrée.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIONS RAPIDES -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="dot dot-gold"></div>
+        ACTIONS RAPIDES
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="action-cards">
+        <a href="{{ url_for('issue_certificate') }}" class="action-card ac-cyan">
+          <div class="action-card-icon">📜</div>
+          <div class="action-card-title">ÉMETTRE UN<br>CERTIFICAT</div>
+          <div class="action-card-arrow">→</div>
+        </a>
+        <a href="{{ url_for('verify') }}" class="action-card ac-green">
+          <div class="action-card-icon">🔍</div>
+          <div class="action-card-title">VÉRIFIER UN<br>CERTIFICAT</div>
+          <div class="action-card-arrow">→</div>
+        </a>
+        <a href="{{ url_for('download_crl') }}" class="action-card ac-gold">
+          <div class="action-card-icon">📋</div>
+          <div class="action-card-title">TÉLÉCHARGER<br>CRL</div>
+          <div class="action-card-arrow">→</div>
+        </a>
+      </div>
+
+      {% if current_user.is_admin() %}
+      <div style="margin-top:16px;">
+        <div style="font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Admin</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <a href="{{ url_for('admin') }}" class="btn btn-purple btn-sm">⚙ Admin CA</a>
+          <a href="{{ url_for('users') }}" class="btn btn-outline btn-sm">👥 Utilisateurs</a>
+          <a href="{{ url_for('audit') }}" class="btn btn-outline btn-sm">📝 Journaux</a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Stats rapides -->
+      <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="background:rgba(0,224,150,0.06);border:1px solid rgba(0,224,150,0.2);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-family:var(--font-title);font-size:1.6rem;color:var(--green);font-weight:700;">{{ valid }}</div>
+          <div style="font-size:0.72rem;color:var(--muted);font-family:var(--mono);">VALIDES</div>
+        </div>
+        <div style="background:rgba(255,59,92,0.06);border:1px solid rgba(255,59,92,0.2);border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-family:var(--font-title);font-size:1.6rem;color:var(--red);font-weight:700;">{{ revoked }}</div>
+          <div style="font-size:0.72rem;color:var(--muted);font-family:var(--mono);">RÉVOQUÉS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
