@@ -1067,12 +1067,6 @@ def debug_pending_files():
     return jsonify(result)
 
 if __name__ == '__main__':
-    print("="*70)
-    print("  🏛️  PKI - UNIVERSITÉ DE YAOUNDÉ I  🏛️")
-    print("  INF4268 — Cryptographie Asymétrique — Master 1 SSI 2025/2026")
-    print("="*70)
-    print("  🌐 Application disponible sur : http://localhost:5000")
-    print("  👑 Compte Administrateur : admin / AdminUY1@2025")
-    print("="*70)
-    app.run(debug=True, port=5000)
-
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)

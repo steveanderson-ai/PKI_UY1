@@ -4,7 +4,7 @@ __pycache__/
 *.key
 *.crt
 .env
-database/*.db
-*.db
 venv/
 .venv/
+uploads/*
+!uploads/.gitkeep
