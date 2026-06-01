@@ -7,4 +7,5 @@ __pycache__/
 venv/
 .venv/
 uploads/*
-!uploads/.gitkeep
+!uploads/.gitkeep*.png
+Screenshot*
