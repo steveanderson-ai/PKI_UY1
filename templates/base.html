@@ -11,67 +11,71 @@
 <body>
 
 {% if current_user.is_authenticated %}
+
+<!-- ══════════ OVERLAY MOBILE (fond sombre derrière la sidebar) ══════════ -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
 <!-- ══════════ SIDEBAR ══════════ -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <div class="sidebar-logo-icon">🏛️</div>
     <div class="sidebar-logo-text">
       <h2>UNIVERSITÉ DE YAOUNDÉ I</h2>
       <p>PKI · INF4268 Master SSI</p>
     </div>
+    <!-- Bouton fermeture sur mobile -->
+    <button class="sidebar-close-btn" id="sidebarCloseBtn" onclick="closeSidebar()">✕</button>
   </div>
 
   <nav class="sidebar-nav">
     {% if current_user.is_admin() %}
-      <!-- MENU ADMINISTRATEUR COMPLET -->
       <div class="nav-section">🏛️ Administration UY1</div>
       <a href="{{ url_for('dashboard_admin') }}" class="nav-link {% if request.endpoint=='dashboard_admin' %}active{% endif %}">
-        <div class="nav-icon">📊</div> Tableau de bord
+        <div class="nav-icon">📊</div> <span>Tableau de bord</span>
       </a>
       <a href="{{ url_for('certificates') }}" class="nav-link {% if request.endpoint=='certificates' %}active{% endif %}">
-        <div class="nav-icon">📜</div> Gestion des certificats
+        <div class="nav-icon">📜</div> <span>Gestion des certificats</span>
       </a>
       <a href="{{ url_for('pending_requests') }}" class="nav-link {% if request.endpoint=='pending_requests' %}active{% endif %}">
-        <div class="nav-icon">📋</div> Demandes en attente
+        <div class="nav-icon">📋</div> <span>Demandes en attente</span>
         {% if pending_count > 0 %}
         <span class="nav-badge">{{ pending_count }}</span>
         {% endif %}
       </a>
       <a href="{{ url_for('verify') }}" class="nav-link {% if request.endpoint=='verify' %}active{% endif %}">
-        <div class="nav-icon">🔍</div> Vérifier certificat
+        <div class="nav-icon">🔍</div> <span>Vérifier certificat</span>
       </a>
       <a href="{{ url_for('view_crl') }}" class="nav-link {% if request.endpoint=='view_crl' %}active{% endif %}">
-        <div class="nav-icon">📋</div> Liste de révocation (CRL)
+        <div class="nav-icon">🗒️</div> <span>Liste de révocation (CRL)</span>
       </a>
       <a href="{{ url_for('audit') }}" class="nav-link {% if request.endpoint=='audit' %}active{% endif %}">
-        <div class="nav-icon">📝</div> Audit & journaux
+        <div class="nav-icon">📝</div> <span>Audit & journaux</span>
       </a>
       <a href="{{ url_for('users') }}" class="nav-link {% if request.endpoint=='users' %}active{% endif %}">
-        <div class="nav-icon">👥</div> Utilisateurs
+        <div class="nav-icon">👥</div> <span>Utilisateurs</span>
       </a>
       <a href="{{ url_for('admin_ca') }}" class="nav-link {% if request.endpoint=='admin_ca' %}active{% endif %}">
-        <div class="nav-icon">🏛️</div> Configuration AC
+        <div class="nav-icon">🏛️</div> <span>Configuration AC</span>
       </a>
     {% else %}
-      <!-- MENU UTILISATEUR STANDARD -->
       <div class="nav-section">🏠 Mon espace</div>
       <a href="{{ url_for('dashboard_user') }}" class="nav-link {% if request.endpoint=='dashboard_user' %}active{% endif %}">
-        <div class="nav-icon">📊</div> Tableau de bord
+        <div class="nav-icon">📊</div> <span>Tableau de bord</span>
       </a>
       <a href="{{ url_for('certificates') }}" class="nav-link {% if request.endpoint=='certificates' %}active{% endif %}">
-        <div class="nav-icon">📜</div> Mes certificats
+        <div class="nav-icon">📜</div> <span>Mes certificats</span>
       </a>
       <a href="{{ url_for('request_certificate') }}" class="nav-link {% if request.endpoint=='request_certificate' %}active{% endif %}">
-        <div class="nav-icon">📝</div> Demander un certificat
+        <div class="nav-icon">📝</div> <span>Demander un certificat</span>
       </a>
       <a href="{{ url_for('profile') }}" class="nav-link {% if request.endpoint=='profile' %}active{% endif %}">
-        <div class="nav-icon">👤</div> Mon profil
+        <div class="nav-icon">👤</div> <span>Mon profil</span>
       </a>
     {% endif %}
-    
+
     <div class="nav-section">🔐 Sécurité</div>
     <a href="{{ url_for('logout') }}" class="nav-link">
-      <div class="nav-icon">↩</div> Déconnexion
+      <div class="nav-icon">↩</div> <span>Déconnexion</span>
     </a>
   </nav>
 
@@ -87,19 +91,22 @@
 </aside>
 
 <!-- ══════════ TOPBAR ══════════ -->
-<div class="topbar">
-  <button class="topbar-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('collapsed')">☰</button>
+<div class="topbar" id="topbar">
+  <!-- Bouton hamburger — visible sur mobile, collapse sur desktop -->
+  <button class="topbar-menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+
   <div class="topbar-title">
     {% block page_title %}PKI Université de Yaoundé I{% endblock %}
     {% if ca_exists %}
     <div class="topbar-ca-badge">
-      🏛 UNIVERSITÉ DE YAOUNDÉ I
+      🏛 <span class="topbar-ca-text">UNIVERSITÉ DE YAOUNDÉ I</span>
       <div class="wave">
         <span></span><span></span><span></span><span></span><span></span>
       </div>
     </div>
     {% endif %}
   </div>
+
   <div class="topbar-actions">
     <a href="{{ url_for('profile') }}" class="user-pill">
       <div class="user-avatar" style="background:{{ current_user.avatar_color }};">
@@ -115,7 +122,7 @@
 </div>
 
 <!-- ══════════ MAIN CONTENT ══════════ -->
-<div class="main-wrapper">
+<div class="main-wrapper" id="mainWrapper">
   <div class="flash-zone">
     {% with msgs = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in msgs %}
@@ -133,7 +140,7 @@
 
 {% else %}
 <!-- ══════════ PAGE NON AUTHENTIFIÉE ══════════ -->
-<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;min-width:360px;max-width:500px;">
+<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;min-width:300px;max-width:500px;width:90%;">
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% for cat, msg in msgs %}
     <div class="alert alert-{{ cat }}">
@@ -147,6 +154,57 @@
 {% endif %}
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+/* ══════════════════════════════════════════════
+   RESPONSIVE SIDEBAR — Script mobile/desktop
+   ══════════════════════════════════════════════ */
+
+const sidebar     = document.getElementById('sidebar');
+const overlay     = document.getElementById('sidebarOverlay');
+const mainWrapper = document.getElementById('mainWrapper');
+const topbar      = document.getElementById('topbar');
+const menuBtn     = document.getElementById('menuBtn');
+
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+function toggleSidebar() {
+  if (isMobile()) {
+    // Sur mobile : ouvrir/fermer en slide
+    sidebar.classList.toggle('mobile-open');
+    overlay.classList.toggle('open');
+  } else {
+    // Sur desktop : collapse/expand
+    sidebar.classList.toggle('collapsed');
+  }
+}
+
+function closeSidebar() {
+  sidebar.classList.remove('mobile-open');
+  overlay.classList.remove('open');
+}
+
+// Fermer la sidebar mobile quand on clique sur un lien
+document.querySelectorAll('.nav-link').forEach(function(link) {
+  link.addEventListener('click', function() {
+    if (isMobile()) {
+      closeSidebar();
+    }
+  });
+});
+
+// Gérer le redimensionnement de la fenêtre
+window.addEventListener('resize', function() {
+  if (!isMobile()) {
+    // Sur desktop : retirer les classes mobiles
+    sidebar.classList.remove('mobile-open');
+    overlay.classList.remove('open');
+  }
+});
+</script>
+
 {% block scripts %}{% endblock %}
 </body>
 </html>

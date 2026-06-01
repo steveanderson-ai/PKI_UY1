@@ -781,3 +781,348 @@ tbody tr:hover { background: rgba(0,212,255,0.03); }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   AJOUTS ET CORRECTIONS RESPONSIVE — À coller à la fin de style.css
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Bouton fermeture sidebar (mobile uniquement) ── */
+.sidebar-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.sidebar-close-btn:hover { color: var(--red); background: rgba(255,59,92,0.1); }
+
+/* ── Overlay sombre derrière la sidebar sur mobile ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  z-index: 190;
+}
+.sidebar-overlay.open { display: block; }
+
+/* ══════════════════════════════════════════
+   TABLETTE (max 1024px)
+   ══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .grid-2-1 {
+    grid-template-columns: 1fr;
+  }
+  .action-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .topbar-ca-text {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════════
+   MOBILE (max 768px)
+   ══════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── SIDEBAR : cachée par défaut, slide depuis la gauche ── */
+  .sidebar {
+    transform: translateX(-100%);
+    width: 260px !important;
+    z-index: 200;
+    transition: transform 0.3s ease, width 0.3s ease;
+  }
+  /* Quand ouverte sur mobile */
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  /* Empêcher le collapse desktop sur mobile */
+  .sidebar.collapsed {
+    width: 260px !important;
+    transform: translateX(-100%);
+  }
+  .sidebar.collapsed.mobile-open {
+    transform: translateX(0);
+  }
+  /* Afficher le bouton ✕ de fermeture */
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Toujours montrer le texte dans la sidebar sur mobile */
+  .sidebar.collapsed .sidebar-logo-text,
+  .sidebar.collapsed .nav-section,
+  .sidebar.collapsed .nav-link span,
+  .sidebar.collapsed .sidebar-status .status-desc,
+  .sidebar.collapsed .sidebar-status .status-title {
+    display: block !important;
+  }
+  .sidebar.collapsed .nav-link {
+    justify-content: flex-start !important;
+    padding: 10px 18px !important;
+  }
+  .sidebar.collapsed .nav-icon {
+    margin: 0 !important;
+  }
+
+  /* ── TOPBAR : pleine largeur ── */
+  .topbar {
+    left: 0 !important;
+    padding: 0 14px;
+    gap: 8px;
+  }
+  /* Masquer le badge CA sur mobile */
+  .topbar-ca-badge {
+    display: none;
+  }
+  .topbar-title {
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── MAIN CONTENT : pas de marge à gauche ── */
+  .main-wrapper {
+    margin-left: 0 !important;
+  }
+  .page-content {
+    padding: 14px;
+  }
+  .flash-zone {
+    padding: 0 14px 8px;
+  }
+
+  /* ── GRILLES : tout en colonne ── */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+  .grid-2-1 {
+    grid-template-columns: 1fr !important;
+  }
+  .action-cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .info-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* ── TABLEAUX : scroll horizontal ── */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+  }
+  table {
+    min-width: 540px;
+  }
+  thead th {
+    font-size: 0.56rem;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+  tbody td {
+    font-size: 0.76rem;
+    padding: 8px 10px;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    margin-bottom: 14px;
+    border-radius: 10px;
+  }
+  .card-body {
+    padding: 14px;
+  }
+  .card-header {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .card-title {
+    font-size: 0.62rem;
+  }
+
+  /* ── STAT CARDS ── */
+  .stat-card {
+    padding: 14px;
+    border-radius: 10px;
+  }
+  .stat-value {
+    font-size: 1.7rem;
+  }
+  .stat-label {
+    font-size: 0.58rem;
+  }
+  .stat-sub {
+    font-size: 0.68rem;
+  }
+
+  /* ── CA PANEL : vertical sur mobile ── */
+  .ca-panel {
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .ca-visual {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ── USER PILL : masquer le nom, garder l'avatar ── */
+  .user-pill-info {
+    display: none;
+  }
+  .user-pill {
+    padding: 4px;
+  }
+
+  /* ── BOUTONS ── */
+  .btn-full {
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-lg {
+    padding: 10px 18px;
+    font-size: 0.88rem;
+  }
+
+  /* ── MODAL ── */
+  .modal-box {
+    margin: 16px;
+    padding: 20px;
+    max-width: calc(100vw - 32px);
+  }
+  .modal-btns {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .modal-btns .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── FORMULAIRES ── */
+  .form-control {
+    font-size: 0.82rem;
+  }
+
+  /* ── AUTH PAGES ── */
+  .auth-page {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+  .auth-card {
+    padding: 24px 18px;
+    border-radius: 14px;
+  }
+
+  /* ── LANDING PAGE ── */
+  .landing {
+    padding: 24px 16px;
+  }
+  .landing-title {
+    font-size: 1.7rem;
+  }
+  .landing-sub {
+    font-size: 0.72rem;
+  }
+  .landing-desc {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+  .landing-ctas {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 320px;
+  }
+  .landing-ctas .btn {
+    justify-content: center;
+  }
+  .landing-features {
+    grid-template-columns: 1fr;
+    margin-top: 28px;
+    gap: 10px;
+  }
+  .landing-hero-icon {
+    font-size: 3rem;
+    margin-bottom: 14px;
+  }
+
+  /* ── VERIFY STEPS ── */
+  .verify-step {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .verify-step-name {
+    font-size: 0.8rem;
+  }
+
+  /* ── AUDIT TIMELINE ── */
+  .audit-meta {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .audit-title {
+    font-size: 0.8rem;
+  }
+
+  /* ── BADGES ── */
+  .badge {
+    font-size: 0.58rem;
+    padding: 2px 7px;
+  }
+}
+
+/* ══════════════════════════════════════════
+   TRÈS PETIT MOBILE (max 420px)
+   ══════════════════════════════════════════ */
+@media (max-width: 420px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .stat-value {
+    font-size: 1.4rem;
+  }
+  .action-cards {
+    grid-template-columns: 1fr;
+  }
+  .info-row {
+    grid-template-columns: 1fr;
+  }
+  .landing-title {
+    font-size: 1.3rem;
+  }
+  .page-content {
+    padding: 10px;
+  }
+  .topbar-title {
+    font-size: 0.68rem;
+  }
+}
