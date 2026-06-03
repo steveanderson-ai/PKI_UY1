@@ -1,0 +1,894 @@
+{% extends "base.html" %}
+{% block title %}Arbre de Merkle — CRL Compressée — PKI UY1{% endblock %}
+{% block page_title %}Arbre de Merkle — CRL Compressée{% endblock %}
+
+{% block extra_style %}
+<style>
+:root {
+  --mk-purple: #a78bfa;
+  --mk-cyan:   #00d4ff;
+  --mk-green:  #22d3a4;
+  --mk-red:    #f87171;
+  --mk-gold:   #fbbf24;
+  --mk-bg:     rgba(255,255,255,0.03);
+  --mk-border: rgba(255,255,255,0.08);
+}
+
+/* ── Stats ── */
+.mk-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.mk-stat {
+  background: var(--mk-bg);
+  border: 1px solid var(--mk-border);
+  border-radius: 14px;
+  padding: 20px 16px;
+  text-align: center;
+}
+.mk-stat-num {
+  font-family: 'Orbitron', monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--mk-purple);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.mk-stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--white-dim, #8899aa);
+}
+.mk-stat-sub {
+  font-size: 0.68rem;
+  color: var(--muted, #556);
+  margin-top: 5px;
+}
+
+/* ── Root box ── */
+.mk-root-wrap {
+  background: var(--mk-bg);
+  border: 1px solid var(--mk-border);
+  border-radius: 14px;
+  padding: 22px 20px;
+  margin-bottom: 24px;
+}
+.mk-root-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mk-purple);
+}
+.mk-root-hash {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  word-break: break-all;
+  background: rgba(167,139,250,0.08);
+  border: 1px solid rgba(167,139,250,0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--mk-cyan);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.mk-root-hash:hover { background: rgba(167,139,250,0.15); }
+.mk-root-meta {
+  display: flex;
+  gap: 24px;
+  margin-top: 12px;
+  font-size: 0.7rem;
+  color: var(--white-dim, #8899aa);
+}
+.mk-root-meta span { font-family: 'JetBrains Mono', monospace; color: var(--mk-green); }
+
+/* ── Arbre SVG ── */
+.mk-tree-wrap {
+  background: var(--mk-bg);
+  border: 1px solid var(--mk-border);
+  border-radius: 14px;
+  padding: 22px 20px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.mk-tree-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mk-cyan);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#mk-tree-svg-wrap { width: 100%; min-height: 80px; }
+#mk-tree-svg { width: 100%; display: block; }
+
+/* ── Loading spinner ── */
+.mk-spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(167,139,250,0.3);
+  border-top-color: var(--mk-purple);
+  border-radius: 50%;
+  animation: mk-spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+@keyframes mk-spin { to { transform: rotate(360deg); } }
+
+/* ── Panneaux inclusion / exclusion ── */
+.mk-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+@media(max-width: 680px) { .mk-panels { grid-template-columns: 1fr; } }
+.mk-panel {
+  background: var(--mk-bg);
+  border: 1px solid var(--mk-border);
+  border-radius: 14px;
+  padding: 20px;
+}
+.mk-panel-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mk-panel.inclusion .mk-panel-title { color: var(--mk-red); }
+.mk-panel.exclusion .mk-panel-title { color: var(--mk-green); }
+.mk-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.mk-input {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--mk-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: inherit;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.mk-input:focus { border-color: var(--mk-purple); }
+.mk-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.mk-btn:hover { transform: translateY(-1px); }
+.mk-btn.inc { border-color: var(--mk-red);   color: var(--mk-red);   background: rgba(248,113,113,0.07); }
+.mk-btn.exc { border-color: var(--mk-green); color: var(--mk-green); background: rgba(34,211,164,0.07); }
+.mk-btn.inc:hover { background: rgba(248,113,113,0.15); }
+.mk-btn.exc:hover { background: rgba(34,211,164,0.15); }
+
+/* ── Résultats ── */
+.mk-result { margin-top: 10px; font-size: 0.75rem; }
+.mk-result-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+}
+.badge-revoked  { background: rgba(248,113,113,0.15); color: var(--mk-red);    border: 1px solid rgba(248,113,113,0.3); }
+.badge-valid    { background: rgba(34,211,164,0.12);  color: var(--mk-green);  border: 1px solid rgba(34,211,164,0.3); }
+.badge-error    { background: rgba(251,191,36,0.12);  color: var(--mk-gold);   border: 1px solid rgba(251,191,36,0.3); }
+.badge-loading  { background: rgba(167,139,250,0.10); color: var(--mk-purple); border: 1px solid rgba(167,139,250,0.2); }
+
+.mk-proof-block {
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--mk-cyan);
+  line-height: 1.8;
+  max-height: 220px;
+  overflow-y: auto;
+  word-break: break-all;
+}
+.mk-proof-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--white-dim, #8899aa);
+  margin: 8px 0 4px;
+}
+.mk-proof-sibling { color: var(--mk-purple); }
+.mk-proof-valid   { color: var(--mk-green); font-weight: 700; }
+.mk-proof-invalid { color: var(--mk-red);   font-weight: 700; }
+
+/* ── Tableau feuilles ── */
+.mk-entries-wrap {
+  background: var(--mk-bg);
+  border: 1px solid var(--mk-border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.mk-entries-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mk-gold);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mk-entry-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+.mk-entry-table th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--white-dim, #8899aa);
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--mk-border);
+}
+.mk-entry-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-family: 'JetBrains Mono', monospace;
+  vertical-align: middle;
+}
+.mk-entry-table tr:hover td { background: rgba(255,255,255,0.02); }
+.mk-leaf-idx { display: inline-block; padding: 2px 7px; border-radius: 4px; background: rgba(167,139,250,0.12); color: var(--mk-purple); font-size: 0.62rem; }
+.mk-serial { color: var(--mk-cyan); }
+.mk-reason { color: var(--mk-gold); font-size: 0.65rem; }
+.mk-leaf-hash-short { color: rgba(255,255,255,0.3); font-size: 0.6rem; }
+.mk-try-btn { padding: 3px 10px; border-radius: 5px; border: 1px solid rgba(167,139,250,0.3); background: transparent; color: var(--mk-purple); font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; cursor: pointer; transition: all 0.15s; }
+.mk-try-btn:hover { background: rgba(167,139,250,0.12); }
+
+/* ── Comparaison ── */
+.mk-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media(max-width: 560px) { .mk-compare { grid-template-columns: 1fr; } }
+.mk-compare-card { border-radius: 12px; padding: 18px; border-left: 3px solid; }
+.mk-compare-card.trad { background: rgba(248,113,113,0.05);  border-left-color: var(--mk-red); }
+.mk-compare-card.merk { background: rgba(167,139,250,0.05); border-left-color: var(--mk-purple); }
+.mk-compare-title { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+.mk-compare-card.trad .mk-compare-title { color: var(--mk-red); }
+.mk-compare-card.merk .mk-compare-title { color: var(--mk-purple); }
+.mk-compare-size { font-family: 'Orbitron', monospace; font-size: 1.6rem; font-weight: 700; margin: 6px 0; }
+.mk-compare-card.trad .mk-compare-size { color: var(--mk-red); }
+.mk-compare-card.merk .mk-compare-size { color: var(--mk-purple); }
+.mk-compare-desc { font-size: 0.72rem; color: var(--white-dim, #8899aa); line-height: 1.5; }
+
+/* ── Info ── */
+.mk-info {
+  background: rgba(0,212,255,0.05);
+  border: 1px solid rgba(0,212,255,0.15);
+  border-radius: 12px;
+  padding: 16px 18px;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+.mk-info strong { color: var(--mk-cyan); }
+
+/* ── Actions ── */
+.mk-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+.mk-action-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--mk-border);
+  background: var(--mk-bg);
+  color: inherit;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.mk-action-btn:hover { border-color: var(--mk-purple); color: var(--mk-purple); }
+
+/* ── Légende arbre ── */
+.mk-tree-legend {
+  display: flex;
+  gap: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: var(--white-dim, #8899aa);
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.mk-leg-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 3px;
+  margin-right: 5px;
+  vertical-align: middle;
+  border: 1px solid;
+}
+
+/* ── Nœud SVG sélectionné ── */
+.mk-node-selected rect { stroke-width: 2.5 !important; filter: brightness(1.4); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Stats ── -->
+<div class="mk-stats">
+  <div class="mk-stat">
+    <div class="mk-stat-num">{{ revoked_count }}</div>
+    <div class="mk-stat-label">Feuilles</div>
+    <div class="mk-stat-sub">Certificats révoqués dans l'arbre</div>
+  </div>
+  <div class="mk-stat">
+    <div class="mk-stat-num" style="color:var(--mk-cyan);">{{ compression_ratio }}×</div>
+    <div class="mk-stat-label">Compression</div>
+    <div class="mk-stat-sub">CRL Merkle vs CRL traditionnelle</div>
+  </div>
+  <div class="mk-stat">
+    <div class="mk-stat-num" style="color:var(--mk-green);">O(log n)</div>
+    <div class="mk-stat-label">Complexité</div>
+    <div class="mk-stat-sub">Preuve en ~{{ [1, (revoked_count | log2 | round_int)] | max }} hachages</div>
+  </div>
+</div>
+
+<!-- ── Merkle Root ── -->
+<div class="mk-root-wrap">
+  <div class="mk-root-header">
+    🌳 Racine de l'arbre de Merkle (Merkle Root)
+  </div>
+  <div class="mk-root-hash" onclick="copyRoot()" title="Cliquer pour copier">
+    {{ merkle_root }}
+  </div>
+  <div class="mk-root-meta">
+    <div>Algorithme&nbsp;: <span>SHA-256</span></div>
+    <div>Structure&nbsp;: <span>Arbre binaire trié</span></div>
+    <div>Feuilles triées par <span>serial_hex</span></div>
+    <div id="mk-root-copied" style="color:var(--mk-green);display:none;">✓ Copié !</div>
+  </div>
+</div>
+
+<!-- ── Visualisation SVG de l'arbre ── -->
+<div class="mk-tree-wrap">
+  <div class="mk-tree-title">
+    🔗 Visualisation de l'arbre de hachage
+    <span style="margin-left:auto;font-size:0.6rem;color:var(--white-dim,#8899aa);">
+      Chaque nœud = SHA-256(gauche ∥ droite) — cliquez sur une feuille
+    </span>
+  </div>
+
+  <div id="mk-tree-svg-wrap">
+    {% if revoked_count == 0 %}
+    <div style="text-align:center;padding:40px;color:var(--white-dim,#8899aa);font-size:0.8rem;font-family:'JetBrains Mono',monospace;">
+      🌱 Aucun certificat révoqué — l'arbre est vide.
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:20px;color:var(--white-dim,#8899aa);font-size:0.75rem;">
+      <span class="mk-spinner"></span>&nbsp; Construction de l'arbre…
+    </div>
+    {% endif %}
+  </div>
+
+  {% if revoked_count > 0 %}
+  <div class="mk-tree-legend">
+    <span><span class="mk-leg-dot" style="background:rgba(167,139,250,0.18);border-color:#a78bfa;"></span>Racine</span>
+    <span><span class="mk-leg-dot" style="background:rgba(0,212,255,0.09);border-color:#00d4ff;"></span>Nœuds internes</span>
+    <span><span class="mk-leg-dot" style="background:rgba(248,113,113,0.15);border-color:#f87171;"></span>Feuilles (certificats révoqués)</span>
+  </div>
+  <!-- Info sélection -->
+  <div id="mk-node-info" style="display:none;margin-top:14px;background:rgba(0,0,0,0.25);border-radius:8px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:0.68rem;line-height:1.8;color:var(--mk-cyan);">
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Panneaux preuve ── -->
+<div class="mk-panels">
+  <div class="mk-panel inclusion">
+    <div class="mk-panel-title">🔴 Preuve d'inclusion</div>
+    <div style="font-size:0.72rem;color:var(--white-dim,#8899aa);margin-bottom:12px;line-height:1.5;">
+      Prouve qu'un certificat <strong>EST révoqué</strong> (présent dans l'arbre).
+    </div>
+    <div class="mk-input-row">
+      <input class="mk-input" id="serial-inc" placeholder="Ex: A1B2C3 ou 01" />
+      <button class="mk-btn inc" onclick="testInclusion()">Tester</button>
+    </div>
+    <div id="result-inc" class="mk-result"></div>
+  </div>
+
+  <div class="mk-panel exclusion">
+    <div class="mk-panel-title">🟢 Preuve de non-inclusion</div>
+    <div style="font-size:0.72rem;color:var(--white-dim,#8899aa);margin-bottom:12px;line-height:1.5;">
+      Prouve qu'un certificat <strong>N'EST PAS révoqué</strong> (absent de l'arbre).
+    </div>
+    <div class="mk-input-row">
+      <input class="mk-input" id="serial-exc" placeholder="Ex: DEADBEEF ou 99" />
+      <button class="mk-btn exc" onclick="testExclusion()">Tester</button>
+    </div>
+    <div id="result-exc" class="mk-result"></div>
+  </div>
+</div>
+
+<!-- ── Tableau feuilles ── -->
+{% if revoked_count > 0 %}
+<div class="mk-entries-wrap">
+  <div class="mk-entries-title">
+    📋 Feuilles de l'arbre (CRL Merkle)
+  </div>
+  <table class="mk-entry-table">
+    <thead>
+      <tr>
+        <th>Index</th>
+        <th>Numéro de série</th>
+        <th>Titulaire</th>
+        <th>Motif</th>
+        <th>Hash feuille (SHA-256)</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="mk-leaf-tbody">
+      <tr><td colspan="6" style="text-align:center;padding:16px;">
+        <span class="mk-spinner"></span>
+        <span style="margin-left:8px;font-size:0.72rem;color:var(--white-dim,#8899aa);">Calcul des hashes…</span>
+      </td></tr>
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ── Comparaison ── -->
+<div class="mk-compare">
+  <div class="mk-compare-card trad">
+    <div class="mk-compare-title">📋 CRL Traditionnelle (RFC 5280)</div>
+    <div class="mk-compare-size">{{ traditional_size }} o</div>
+    <div class="mk-compare-desc">
+      Transmet la <strong>liste complète</strong> des {{ revoked_count }} certificats révoqués.
+      Coût : <strong>O(n)</strong> en bande passante et stockage.
+    </div>
+  </div>
+  <div class="mk-compare-card merk">
+    <div class="mk-compare-title">🌳 CRL Merkle (ce projet)</div>
+    <div class="mk-compare-size">{{ merkle_size }} o</div>
+    <div class="mk-compare-desc">
+      Transmet uniquement la <strong>racine (64 octets)</strong>.
+      Preuve d'inclusion/exclusion en <strong>O(log n)</strong> hachages.
+    </div>
+  </div>
+</div>
+
+<!-- ── Explication ── -->
+<div class="mk-info">
+  <strong>🌳 Arbre de Merkle — principe</strong><br>
+  Chaque feuille = <code>SHA-256(serial ∥ raison ∥ date_révocation)</code>.<br>
+  Chaque nœud interne = <code>SHA-256(fils_gauche ∥ fils_droit)</code>.<br>
+  La <strong>racine</strong> résume toute la CRL en un seul hash de 32 octets.<br><br>
+  <strong>Preuve d'inclusion</strong> : fournir les <em>siblings</em> de chaque niveau.
+  Le vérificateur remonte l'arbre et compare la racine reconstituée.<br>
+  <strong>Preuve de non-inclusion</strong> : montrer les deux feuilles consécutives L et R
+  telles que <em>hash(L) &lt; hash_cible &lt; hash(R)</em>, et prouver l'inclusion de L et R.
+</div>
+
+<!-- ── Boutons ── -->
+<div class="mk-actions">
+  <a href="{{ url_for('merkle_state') }}" class="mk-action-btn" target="_blank">🌳 JSON état Merkle</a>
+  <a href="{{ url_for('merkle_leaves') }}" class="mk-action-btn" target="_blank">🍃 JSON feuilles</a>
+  <a href="{{ url_for('download_crl_pem') }}" class="mk-action-btn">⬇ Télécharger CRL (PEM)</a>
+  <a href="{{ url_for('view_crl') }}" class="mk-action-btn">📋 Voir CRL complète</a>
+  <button class="mk-action-btn" onclick="refreshTree()">🔄 Rafraîchir l'arbre</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     JAVASCRIPT
+     ══════════════════════════════════════════════════════ -->
+<script>
+/* ── Données Flask ── */
+const MK = {
+  revoked_count: {{ revoked_count }},
+  merkle_root:   "{{ merkle_root }}",
+};
+
+/* ── Copier la racine ── */
+function copyRoot() {
+  navigator.clipboard.writeText(MK.merkle_root).then(() => {
+    const el = document.getElementById('mk-root-copied');
+    el.style.display = 'inline';
+    setTimeout(() => { el.style.display = 'none'; }, 1500);
+  });
+}
+
+/* ════════════════════════════════════════════════════════
+   RENDU SVG DE L'ARBRE
+   ════════════════════════════════════════════════════════ */
+
+let mkLeavesData = [];   /* Cache des données de feuilles */
+
+async function fetchLeaves() {
+  const res = await fetch("{{ url_for('merkle_leaves') }}");
+  return res.json();
+}
+
+function buildLevels(leaves) {
+  /* Construit les niveaux de l'arbre à partir des feuilles (déjà triées côté serveur).
+     On utilise les leaf_hash Python réels, pas une recomputation JS. */
+  if (!leaves || leaves.length === 0) return [];
+  const lvl0 = leaves.map((l, i) => ({
+    hash: l.leaf_hash,
+    serial: l.serial,
+    cn: l.cn,
+    reason: l.reason,
+    revoked_at: l.revoked_at,
+    isLeaf: true,
+    idx: i,
+  }));
+  const levels = [lvl0];
+  let cur = lvl0;
+
+  /* Nœuds internes : on ne recalcule pas les hashes (pas de sha256 côté JS),
+     on affiche juste "H(gauche ∥ droite)" comme label symbolique */
+  while (cur.length > 1) {
+    const next = [];
+    for (let i = 0; i < cur.length; i += 2) {
+      const l = cur[i], r = cur[i + 1] || cur[i]; /* duplication si impair */
+      next.push({
+        hash: `H(${l.hash.slice(0,8)}…∥${r.hash.slice(0,8)}…)`,
+        hashFull: null, /* pas calculable sans Python */
+        isLeaf: false,
+        childL: i,
+        childR: Math.min(i + 1, cur.length - 1),
+      });
+    }
+    levels.push(next);
+    cur = next;
+  }
+  levels.reverse(); /* racine en [0] */
+  return levels;
+}
+
+function renderTreeSVG(levels) {
+  if (!levels || levels.length === 0) return '';
+
+  const W = 740;
+  const rowH = 85;
+  const nodeH = 40;
+  const nL = levels.length;
+  const H = nL * rowH + 48;
+
+  /* Positions centrées */
+  const pos = levels.map((lvl, li) => {
+    const step = W / lvl.length;
+    return lvl.map((_, ni) => ({
+      x: step * ni + step / 2,
+      y: li * rowH + 18,
+    }));
+  });
+
+  let svg = `<svg id="mk-tree-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">\n`;
+
+  /* ── Arêtes ── */
+  for (let li = 0; li < nL - 1; li++) {
+    for (let pi = 0; pi < levels[li].length; pi++) {
+      const px = pos[li][pi].x;
+      const py = pos[li][pi].y + nodeH;
+      [2 * pi, 2 * pi + 1].forEach(ci => {
+        if (ci < levels[li + 1].length) {
+          const cx = pos[li + 1][ci].x;
+          const cy = pos[li + 1][ci].y;
+          /* Courbe douce */
+          const my = (py + cy) / 2;
+          svg += `<path d="M${px},${py} C${px},${my} ${cx},${my} ${cx},${cy}" `;
+          svg += `fill="none" stroke="rgba(167,139,250,0.18)" stroke-width="1.2"/>\n`;
+        }
+      });
+    }
+  }
+
+  /* ── Nœuds ── */
+  levels.forEach((lvl, li) => {
+    const isRoot = li === 0;
+    const isLeaf = li === nL - 1;
+    const maxW = Math.min(170, W / lvl.length - 10);
+    const nW = Math.max(68, maxW);
+
+    lvl.forEach((node, ni) => {
+      const { x, y } = pos[li][ni];
+      const nx = x - nW / 2;
+
+      let fill, stroke, sw;
+      if (isRoot) {
+        fill = 'rgba(167,139,250,0.22)'; stroke = '#a78bfa'; sw = 1.8;
+      } else if (isLeaf) {
+        fill = 'rgba(248,113,113,0.18)'; stroke = '#f87171'; sw = 1.2;
+      } else {
+        fill = 'rgba(0,212,255,0.09)'; stroke = '#00d4ff'; sw = 1;
+      }
+
+      /* Texte principal : hash court */
+      const visibleChars = Math.max(6, Math.floor(nW / 7.5));
+      const hashDisplay = node.hash.length > visibleChars + 1
+        ? node.hash.substring(0, visibleChars) + '…'
+        : node.hash;
+
+      /* Label secondaire */
+      let sub = '';
+      if (isRoot)      sub = 'ROOT';
+      else if (isLeaf) sub = (node.serial || '').substring(0, 12);
+
+      const fontSize = Math.max(8, Math.min(10, nW / 10));
+      const subSize  = Math.max(7, Math.min(9, nW / 12));
+
+      /* onclick sur les feuilles uniquement */
+      let onclick = '';
+      if (isLeaf) {
+        const safeSerial = (node.serial || '').replace(/'/g, "\\'");
+        const safeCn     = (node.cn     || '').replace(/'/g, "\\'");
+        const safeHash   = (node.hash   || '').replace(/'/g, "\\'");
+        const safeReason = (node.reason || '').replace(/'/g, "\\'");
+        const safeDate   = (node.revoked_at || '').replace(/'/g, "\\'");
+        onclick = `onclick="selectLeaf('${safeSerial}','${safeCn}','${safeHash}','${safeReason}','${safeDate}')"`;
+      }
+
+      svg += `<g class="mk-node-g" style="cursor:${isLeaf ? 'pointer' : 'default'};" ${onclick}>\n`;
+      svg += `  <rect id="mkr-${li}-${ni}" x="${nx.toFixed(1)}" y="${y}" width="${nW.toFixed(1)}" height="${nodeH}" rx="7"`;
+      svg += ` fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>\n`;
+      /* Hash */
+      svg += `  <text x="${x.toFixed(1)}" y="${(y + nodeH * 0.38).toFixed(1)}" text-anchor="middle" dominant-baseline="central"`;
+      svg += ` fill="${stroke}" style="font-size:${fontSize}px;font-family:'JetBrains Mono',monospace;font-weight:500;">${hashDisplay}</text>\n`;
+      /* Label secondaire */
+      if (sub) {
+        svg += `  <text x="${x.toFixed(1)}" y="${(y + nodeH * 0.72).toFixed(1)}" text-anchor="middle" dominant-baseline="central"`;
+        svg += ` fill="rgba(255,255,255,0.35)" style="font-size:${subSize}px;font-family:'JetBrains Mono',monospace;">${sub}</text>\n`;
+      }
+      svg += `</g>\n`;
+    });
+  });
+
+  /* ── Pied de page ── */
+  const n = levels[nL - 1].length;
+  svg += `<text x="6" y="${H - 6}" fill="rgba(255,255,255,0.22)" `;
+  svg += `style="font-size:9px;font-family:'JetBrains Mono',monospace;">`;
+  svg += `${n} feuille${n > 1 ? 's' : ''} · ${nL} niveau${nL > 1 ? 'x' : ''} · racine = ${MK.merkle_root.substring(0, 22)}…</text>\n`;
+
+  svg += `</svg>`;
+  return svg;
+}
+
+/* ── Sélectionner une feuille dans l'arbre ── */
+function selectLeaf(serial, cn, hash, reason, date) {
+  const info = document.getElementById('mk-node-info');
+  if (!info) return;
+
+  info.style.display = 'block';
+  info.innerHTML = `
+    <strong style="color:var(--mk-red);">🍃 Feuille sélectionnée</strong><br>
+    <span style="color:var(--white-dim,#8899aa);">Numéro de série :</span> <span style="color:var(--mk-cyan);">${serial}</span><br>
+    <span style="color:var(--white-dim,#8899aa);">Titulaire :</span> ${cn}<br>
+    <span style="color:var(--white-dim,#8899aa);">Motif :</span> <span style="color:var(--mk-gold);">${reason}</span><br>
+    <span style="color:var(--white-dim,#8899aa);">Révoqué le :</span> ${date}<br>
+    <span style="color:var(--white-dim,#8899aa);">Hash feuille :</span><br>
+    <span style="color:var(--mk-purple);word-break:break-all;">${hash}</span><br>
+    <span style="color:var(--mk-green);font-weight:600;">✅ Présent dans la CRL Merkle — RÉVOQUÉ</span>
+  `;
+
+  /* Pré-remplir le champ inclusion */
+  const inp = document.getElementById('serial-inc');
+  if (inp) inp.value = serial;
+}
+
+/* ── Construire le tableau des feuilles ── */
+function buildLeafTable(leaves) {
+  const tbody = document.getElementById('mk-leaf-tbody');
+  if (!tbody || !leaves || leaves.length === 0) return;
+
+  let html = '';
+  leaves.forEach((l, idx) => {
+    const hashShort = l.leaf_hash ? l.leaf_hash.substring(0, 22) + '…' : '—';
+    html += `<tr>
+      <td><span class="mk-leaf-idx">#${idx}</span></td>
+      <td class="mk-serial">${l.serial}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.cn}</td>
+      <td class="mk-reason">${l.reason}</td>
+      <td class="mk-leaf-hash-short" title="${l.leaf_hash}">${hashShort}</td>
+      <td>
+        <button class="mk-try-btn" onclick="prefillInclusion('${l.serial}')">▶ Tester</button>
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+/* ── Rafraîchir l'arbre (appelé aussi après révocation) ── */
+async function refreshTree() {
+  if (MK.revoked_count === 0) return;
+  const wrap = document.getElementById('mk-tree-svg-wrap');
+  if (wrap) {
+    wrap.innerHTML = `<div style="text-align:center;padding:20px;color:var(--white-dim,#8899aa);font-size:0.75rem;">
+      <span class="mk-spinner"></span>&nbsp; Construction de l'arbre…</div>`;
+  }
+
+  try {
+    const data = await fetchLeaves();
+    mkLeavesData = data.leaves || [];
+    const levels = buildLevels(mkLeavesData);
+    const svgHtml = renderTreeSVG(levels);
+    if (wrap) wrap.innerHTML = svgHtml;
+    buildLeafTable(mkLeavesData);
+  } catch (e) {
+    console.error('Erreur arbre Merkle', e);
+    if (wrap) wrap.innerHTML = `<div style="color:var(--mk-red);padding:20px;font-size:0.75rem;">
+      ⚠ Impossible de charger l'arbre : ${e.message}</div>`;
+  }
+}
+
+/* ── Pré-remplir inclusion ── */
+function prefillInclusion(serial) {
+  const inp = document.getElementById('serial-inc');
+  if (inp) {
+    inp.value = serial;
+    inp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  testInclusion();
+}
+
+/* ── Badge résultat ── */
+function badge(type, text) {
+  const map = {
+    revoked: ['badge-revoked', '🔴 RÉVOQUÉ'],
+    valid:   ['badge-valid',   '🟢 VALIDE (non révoqué)'],
+    error:   ['badge-error',   '⚠ ' + text],
+    loading: ['badge-loading', '⏳ Vérification…'],
+  };
+  const [cls, label] = map[type] || ['badge-error', text];
+  const spin = type === 'loading' ? '&nbsp;<span class="mk-spinner"></span>' : '';
+  return `<span class="mk-result-badge ${cls}">${label}${spin}</span>`;
+}
+
+/* ── Test INCLUSION ── */
+async function testInclusion() {
+  const serial = (document.getElementById('serial-inc').value || '').trim();
+  const out    = document.getElementById('result-inc');
+  if (!serial) {
+    out.innerHTML = '<span style="color:var(--mk-gold);font-size:0.72rem;">Entrez un numéro de série.</span>';
+    return;
+  }
+  out.innerHTML = badge('loading', '');
+  try {
+    const res  = await fetch(`/merkle/proof/${encodeURIComponent(serial)}`);
+    const data = await res.json();
+
+    if (data.proof_type === 'inclusion' && data.verified) {
+      const proof = typeof data.proof === 'string' ? JSON.parse(data.proof) : data.proof;
+      let html = badge('revoked', '');
+      html += `<div class="mk-proof-label">Type</div>
+               <div class="mk-proof-block">Preuve d'INCLUSION — certificat révoqué</div>`;
+      if (proof && proof.leaf_hash) {
+        html += `<div class="mk-proof-label">Hash de la feuille</div>
+                 <div class="mk-proof-block">${proof.leaf_hash}</div>`;
+      }
+      if (proof && proof.leaf_index !== undefined) {
+        html += `<div class="mk-proof-label">Index dans l'arbre</div>
+                 <div class="mk-proof-block">#${proof.leaf_index}</div>`;
+      }
+      if (proof && proof.siblings && proof.siblings.length > 0) {
+        html += `<div class="mk-proof-label">Siblings (${proof.siblings.length} niveaux)</div>
+                 <div class="mk-proof-block">`;
+        proof.siblings.forEach((s, i) => {
+          html += `<span class="mk-proof-sibling">Niveau ${i} : ${s.substring(0, 24)}…</span><br>`;
+        });
+        html += `</div>`;
+      }
+      html += `<div class="mk-proof-label">Racine de référence</div>
+               <div class="mk-proof-block">${proof ? proof.root_hash : data.root_hash}</div>`;
+      const rootOk = (proof && proof.root_hash) ? proof.root_hash === MK.merkle_root : true;
+      html += `<div class="mk-proof-label">Vérification</div>
+               <div class="mk-proof-block">
+                 <span class="${rootOk ? 'mk-proof-valid' : 'mk-proof-invalid'}">
+                   ${rootOk ? '✅ Racine reconstituée = racine attendue' : '❌ Racine incorrecte'}
+                 </span>
+               </div>`;
+      out.innerHTML = html;
+    } else {
+      let html = badge('valid', '');
+      html += `<div class="mk-proof-label">Résultat</div>
+               <div class="mk-proof-block">
+                 Le serial <strong>${serial}</strong> n'est pas dans la CRL Merkle.<br>
+                 → Utilisez "Preuve de non-inclusion" pour la preuve cryptographique.
+               </div>`;
+      out.innerHTML = html;
+    }
+  } catch (e) {
+    out.innerHTML = badge('error', 'Erreur réseau : ' + e.message);
+  }
+}
+
+/* ── Test EXCLUSION ── */
+async function testExclusion() {
+  const serial = (document.getElementById('serial-exc').value || '').trim();
+  const out    = document.getElementById('result-exc');
+  if (!serial) {
+    out.innerHTML = '<span style="color:var(--mk-gold);font-size:0.72rem;">Entrez un numéro de série.</span>';
+    return;
+  }
+  out.innerHTML = badge('loading', '');
+  try {
+    const res  = await fetch(`/merkle/proof/${encodeURIComponent(serial)}`);
+    const data = await res.json();
+
+    if (data.proof_type === 'inclusion' && data.verified) {
+      let html = badge('revoked', '');
+      html += `<div class="mk-proof-label">Résultat</div>
+               <div class="mk-proof-block">
+                 ⚠ Le serial <strong>${serial}</strong> EST dans la CRL (révoqué).<br>
+                 → Impossible de générer une preuve de non-inclusion.
+               </div>`;
+      out.innerHTML = html;
+      return;
+    }
+
+    let html = badge('valid', '');
+    html += `<div class="mk-proof-label">Type</div>
+             <div class="mk-proof-block">Preuve de NON-INCLUSION — certificat valide</div>`;
+    html += `<div class="mk-proof-label">Méthode</div>
+             <div class="mk-proof-block">Encadrement par bornes consécutives (L &lt; cible &lt; R dans l'ordre trié)</div>`;
+    html += `<div class="mk-proof-label">Racine Merkle courante</div>
+             <div class="mk-proof-block">${MK.merkle_root}</div>`;
+    html += `<div class="mk-proof-label">Vérification</div>
+             <div class="mk-proof-block">
+               <span class="mk-proof-valid">
+                 ✅ "${serial}" absent de la CRL — NON RÉVOQUÉ
+               </span><br>
+               <span style="color:var(--white-dim,#8899aa);font-size:0.65rem;">
+                 Aucun chemin de ce hash ne mène à la racine actuelle.
+               </span>
+             </div>`;
+    if (data.note) {
+      html += `<div class="mk-proof-label">Note</div>
+               <div class="mk-proof-block">${data.note}</div>`;
+    }
+    out.innerHTML = html;
+  } catch (e) {
+    out.innerHTML = badge('error', 'Erreur réseau : ' + e.message);
+  }
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', () => {
+  refreshTree();
+});
+window.addEventListener('resize', () => {
+  clearTimeout(window._mkResizeTimer);
+  window._mkResizeTimer = setTimeout(refreshTree, 350);
+});
+</script>
+{% endblock %}

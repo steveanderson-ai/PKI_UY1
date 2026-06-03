@@ -141,6 +141,7 @@
   .dot-cyan { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
   .dot-gold { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
   .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-red { background: var(--red); box-shadow: 0 0 6px var(--red); }
 
   .db-card-body { padding: 22px; }
 
@@ -374,6 +375,56 @@
             <div class="info-cell-value">{{ current_user.created_at.strftime('%d/%m/%Y') }}</div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section CRL pour TOUS les utilisateurs -->
+  <div class="db-card" style="--ci:4">
+    <div class="db-card-header">
+      <div class="db-card-title">
+        <span class="dot-c dot-red"></span>
+        LISTE DE RÉVOCATION (CRL)
+      </div>
+    </div>
+    <div class="db-card-body">
+      <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 16px;">
+        <a href="{{ url_for('download_crl_pem') }}" 
+           class="btn-xs btn-gold"
+           style="background: linear-gradient(135deg, #8a6a1a, #c9a84c);">
+          🔐 Télécharger CRL (PEM / OpenSSL)
+        </a>
+        <a href="{{ url_for('download_crl_txt') }}" 
+           class="btn-xs btn-ghost"
+           style="border-color: var(--cyan); color: var(--cyan);">
+          📋 Télécharger CRL (TXT lisible)
+        </a>
+        <a href="{{ url_for('user_print_crl') }}" 
+           target="_blank"
+           class="btn-xs btn-cyan">
+          🖨 Voir CRL en PDF officiel
+        </a>
+        <a href="{{ url_for('view_crl') }}" 
+           class="btn-xs btn-ghost"
+           style="border-color: var(--gold); color: var(--gold);">
+          📋 Consulter la CRL en ligne
+        </a>
+      </div>
+      <div style="margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--white-dim); line-height: 1.6;">
+          <strong style="color: var(--cyan);">🔐 Qu'est-ce que la CRL ?</strong><br>
+          La Certificate Revocation List (CRL) est la liste officielle des certificats numériques 
+          révoqués par l'Université de Yaoundé I avant leur expiration naturelle.
+        </div>
+        <div style="margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--white-dim);">
+          <strong>📋 Format PEM</strong> : Utilisable avec OpenSSL → 
+          <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">openssl crl -in crl_uy1.pem -text -noout</code>
+        </div>
+        {% if ca %}
+        <div style="margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; color: var(--gold);">
+          🔑 Empreinte CA : {{ ca.fingerprint[:64] }}
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>

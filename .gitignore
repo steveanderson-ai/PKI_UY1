@@ -1,11 +1,32 @@
+# Base de données SQLite
+database/pki.db
+*.db
+*.sqlite3
+
+# Cache Python
 __pycache__/
 *.pyc
-*.pem
-*.key
-*.crt
-.env
+*.pyo
+*.pyd
+.Python
+
+# Environnement virtuel
 venv/
+env/
 .venv/
-uploads/*
-!uploads/.gitkeep*.png
-Screenshot*
+
+# Fichiers secrets
+*.env
+.env
+config_secret.py
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Certificats générés (optionnel : retire si tu veux les garder)
+uploads/
+*.pem
+
+# Logs
+*.log

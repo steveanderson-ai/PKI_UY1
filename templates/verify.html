@@ -759,7 +759,8 @@
       </div>
       <div class="dl-bar" style="margin-top: 0; margin-left: auto;">
         <a href="{{ url_for('download_ca_cert') }}" class="btn-dl btn-dl-ca">⬇ CA Cert</a>
-        <a href="{{ url_for('download_crl') }}" class="btn-dl btn-dl-crl">⬇ CRL</a>
+        <a href="{{ url_for('download_crl_pem') }}" class="btn-dl btn-dl-crl">⬇ CRL PEM</a>
+        <a href="{{ url_for('download_crl_txt') }}" class="btn-dl btn-dl-crl">⬇ CRL TXT</a>
       </div>
     </div>
   </div>
@@ -1023,10 +1024,15 @@ MIIDXTCCAkWgAwIBAgIJANxxxxxxxxxxxxxxxxxx...
              style="display: flex; justify-content: center; margin-bottom: 8px;">
             🏛 CA Université de Yaoundé I
           </a>
-          <a href="{{ url_for('download_crl') }}"
+          <a href="{{ url_for('download_crl_pem') }}"
              class="btn-dl btn-dl-crl"
              style="display: flex; justify-content: center;">
-            📋 Liste de Révocation (CRL)
+            📋 Liste de Révocation (CRL) - PEM
+          </a>
+          <a href="{{ url_for('download_crl_txt') }}"
+             class="btn-dl btn-dl-crl"
+             style="display: flex; justify-content: center; margin-top: 8px;">
+            📄 Liste de Révocation (CRL) - TXT lisible
           </a>
         </div>
       </div>
@@ -1090,7 +1096,6 @@ function loadPemFile(input) {
   const reader = new FileReader();
   reader.onload = function(e) {
     document.getElementById('pemInput').value = e.target.result;
-    // Switcher sur l'onglet PEM
     switchTab('pem');
   };
   reader.readAsText(file);
@@ -1108,12 +1113,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 300);
   }
 
-  // Auto-switch si résultat PEM
   {% if mode == 'pem' %}
   switchTab('pem');
   {% endif %}
-
-  // Garder l'onglet actif si résultat search
   {% if mode == 'search' %}
   switchTab('search');
   {% endif %}

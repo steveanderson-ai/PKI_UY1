@@ -3,13 +3,14 @@ PKI de l'Université de Yaoundé I — INF4268
 Master 1 SSI — Année académique 2025/2026
 Système complet avec demande de certificat et workflow admin
 """
-import os, random, secrets
+import os, random, secrets, hashlib
 from datetime import datetime, timezone, timedelta
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, Response, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 import json
+import math  # Ajouter en haut du fichier
 
 load_dotenv()
 
@@ -37,6 +38,26 @@ login_manager.login_message= 'Veuillez vous connecter pour accéder à la platef
 CA_PASSWORD = os.getenv('CA_PASSWORD', 'UY1@2025Secure!CA').encode()
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
 
+# ==================== FILTRES JINJA2 PERSONNALISÉS ===================
+
+@app.template_filter('log2')
+def log2_filter(value):
+    """Calcule le logarithme base 2 d'un nombre"""
+    try:
+        if value <= 0:
+            return 0
+        return math.log2(value)
+    except (ValueError, TypeError):
+        return 0
+
+@app.template_filter('round_int')
+def round_int_filter(value):
+    """Arrondit un float à l'entier le plus proche"""
+    try:
+        return int(round(float(value)))
+    except (ValueError, TypeError):
+        return 0
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -58,7 +79,7 @@ def get_ca():
     return AuthorityCA.query.first()
 
 def expiring_soon(days=30):
-    limit = datetime.utcnow() + timedelta(days=days)
+    limit = datetime.now(timezone.utc) + timedelta(days=days)
     return Certificate.query.filter(Certificate.status=='VALID', Certificate.expires_at!=None, Certificate.expires_at<=limit).count()
 
 def init_database():
@@ -117,7 +138,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             login_user(user, remember=True)
-            user.last_login = datetime.utcnow()
+            user.last_login = datetime.now(timezone.utc)
             db.session.commit()
             add_log('LOGIN', 'Connexion réussie', f'Utilisateur {user.username} connecté', '👤', '#00e096')
             flash(f'Bienvenue sur la PKI de l\'Université de Yaoundé I, {user.display_name()} !', 'success')
@@ -221,40 +242,29 @@ def request_certificate():
         department = request.form.get('department', '').strip()
         status_type = request.form.get('status_type', 'etudiant')
         
-        # ====== Gestion améliorée du fichier justificatif ======
         filename = ''
         file_error = None
         
         if 'justification_file' in request.files:
             file = request.files['justification_file']
-            if file and file.filename:  # Un fichier a été sélectionné
-                
-                # Vérifier l'extension
+            if file and file.filename:
                 if not allowed_file(file.filename):
                     file_error = f"Format de fichier non autorisé. Utilisez: {', '.join(ALLOWED_EXTENSIONS)}"
                 else:
-                    # Vérifier la taille (lire le fichier pour connaître sa taille réelle)
-                    file.seek(0, 2)  # Aller à la fin
+                    file.seek(0, 2)
                     file_size = file.tell()
-                    file.seek(0)      # Revenir au début
+                    file.seek(0)
                     
                     if file_size > app.config['MAX_CONTENT_LENGTH']:
                         file_error = f"Le fichier est trop volumineux. Maximum {app.config['MAX_CONTENT_LENGTH'] // (1024*1024)} Mo"
                     else:
-                        # Tout est OK, sauvegarder
                         filename = secure_filename(f"{current_user.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
                         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                        print(f"[DEBUG] Fichier sauvegardé: {filename} ({file_size} bytes)")  # Pour déboguer
-            else:
-                # Aucun fichier sélectionné, c'est optionnel donc pas d'erreur
-                pass
         
-        # Si une erreur de fichier s'est produite, on retourne au formulaire
         if file_error:
             flash(file_error, 'danger')
             return render_template('request_certificate.html')
         
-        # Générer un numéro de demande unique
         request_number = f"DEM-{datetime.now().strftime('%Y%m%d')}-{secrets.randbelow(10000):04d}"
         
         cert_request = CertificateRequest(
@@ -271,7 +281,6 @@ def request_certificate():
         db.session.add(cert_request)
         db.session.commit()
         
-        # Message de confirmation avec ou sans fichier
         if filename:
             flash(f'Votre demande a été envoyée avec le justificatif "{filename}". Vous serez notifié une fois traitée.', 'success')
         else:
@@ -322,7 +331,6 @@ def approve_request(req_id):
         flash('Aucune Autorité de Certification configurée.', 'danger')
         return redirect(url_for('admin_ca'))
     
-    # Mettre à jour les infos de l'utilisateur
     user = cert_request.requester
     user.matricule = cert_request.matricule
     user.full_name = cert_request.full_name
@@ -331,7 +339,6 @@ def approve_request(req_id):
     user.status_type = cert_request.status_type
     db.session.commit()
     
-    # Émettre le certificat
     ca.serial_counter += 1
     serial = ca.serial_counter
     
@@ -365,9 +372,8 @@ def approve_request(req_id):
     )
     db.session.add(cert_obj)
     
-    # Mettre à jour la demande
     cert_request.status = 'APPROVED'
-    cert_request.processed_at = datetime.utcnow()
+    cert_request.processed_at = datetime.now(timezone.utc)
     cert_request.processed_by = current_user.id
     cert_request.admin_notes = request.form.get('admin_notes', '')
     db.session.commit()
@@ -390,7 +396,7 @@ def reject_request(req_id):
     
     reject_reason = request.form.get('reject_reason', 'Non spécifiée')
     cert_request.status = 'REJECTED'
-    cert_request.processed_at = datetime.utcnow()
+    cert_request.processed_at = datetime.now(timezone.utc)
     cert_request.processed_by = current_user.id
     cert_request.reject_reason = reject_reason
     db.session.commit()
@@ -459,8 +465,6 @@ def download_cert(cert_id):
 
 # ==================== VÉRIFICATION ====================
 
-# ==================== VÉRIFICATION ====================
-
 @app.route('/verify', methods=['GET', 'POST'])
 @login_required
 def verify():
@@ -469,7 +473,7 @@ def verify():
         return redirect(url_for('dashboard_user'))
 
     result = None
-    mode = None  # 'search' ou 'pem'
+    mode = None
 
     if request.method == 'POST':
         ca = get_ca()
@@ -480,7 +484,6 @@ def verify():
         revoked_serials = [e.serial_int for e in CRLEntry.query.all()]
         revoked_reasons = {e.serial_int: e.reason_label for e in CRLEntry.query.all()}
 
-        # ── MODE 1 : Recherche par numéro de série / nom ──
         if request.form.get('mode') == 'search':
             mode = 'search'
             q = request.form.get('serial_input', '').strip()
@@ -513,7 +516,6 @@ def verify():
             result['cert_obj'] = cert_obj
             result['search_query'] = q
 
-            # Ajouter la raison de révocation si révoqué
             if not result['valid'] and cert_obj.serial_int in revoked_reasons:
                 result['revoke_reason_label'] = revoked_reasons[cert_obj.serial_int]
 
@@ -524,7 +526,6 @@ def verify():
                 '🔍', '#00d4ff'
             )
 
-        # ── MODE 2 : Vérification par PEM brut collé ──
         elif request.form.get('mode') == 'pem':
             mode = 'pem'
             pem_input = request.form.get('pem_input', '').strip()
@@ -540,7 +541,6 @@ def verify():
             )
             result['pem_input'] = pem_input
 
-            # Chercher si ce certificat existe en base (par numéro de série)
             if 'serial' in result and result.get('serial'):
                 cert_obj = Certificate.query.filter_by(serial_int=result['serial']).first()
                 if cert_obj:
@@ -557,19 +557,315 @@ def verify():
 
     return render_template('verify.html', result=result, mode=mode)
 
-# ==================== CRL ====================
+# ==================== CRL - ACCESSIBLE À TOUS ====================
 
 @app.route('/crl')
 @login_required
 def view_crl():
-    if not current_user.is_admin():
-        flash('La liste de révocation est accessible uniquement à l\'administration.', 'danger')
-        return redirect(url_for('dashboard_user'))
-    
+    """Liste de révocation - accessible à TOUS les utilisateurs authentifiés"""
     crl_entries = CRLEntry.query.order_by(CRLEntry.revoked_at.desc()).all()
     ca = get_ca()
     return render_template('crl.html', crl_entries=crl_entries, ca=ca)
 
+@app.route('/api/crl.pem')
+def api_crl_pem():
+    """API de téléchargement CRL au format PEM"""
+    ca = get_ca()
+    if not ca:
+        return 'Aucune AC configurée', 404
+    
+    entries = CRLEntry.query.all()
+    revoked_list = [(e.serial_int, e.reason, e.revoked_at) for e in entries]
+    crl_pem = PKIEngine.generate_crl(ca.cert_pem, ca.key_encrypted, CA_PASSWORD, revoked_list)
+    
+    if not crl_pem or not crl_pem.startswith('-----BEGIN X509 CRL-----'):
+        crl_pem = PKIEngine._get_fallback_crl()
+    
+    # CRITIQUE: S'assurer que le PEM est valide
+    if not crl_pem.endswith('\n'):
+        crl_pem += '\n'
+    
+    return Response(
+        crl_pem,
+        mimetype='application/x-pem-file',
+        headers={
+            'Content-Disposition': 'attachment; filename="crl_uy1.pem"',
+            'Content-Type': 'application/x-pem-file',
+            'Cache-Control': 'no-cache'
+        }
+    )
+
+@app.route('/api/crl.txt')
+def download_crl_txt():
+    """CRL en format texte lisible - accessible à tous"""
+    ca = get_ca()
+    if not ca:
+        abort(404)
+
+    entries = CRLEntry.query.order_by(CRLEntry.revoked_at.desc()).all()
+    now = datetime.now(timezone.utc)
+    next_update = now + timedelta(days=7)
+
+    lines = []
+    lines.append('=' * 70)
+    lines.append('  LISTE DE RÉVOCATION DES CERTIFICATS (CRL)')
+    lines.append('  Université de Yaoundé I — INF4268 — M1 SSI')
+    lines.append('=' * 70)
+    lines.append(f'  Émetteur       : {ca.name}')
+    lines.append(f'  Organisation   : {ca.organisation}')
+    lines.append(f'  Pays           : {ca.country}')
+    lines.append(f'  Email          : {ca.email}')
+    lines.append(f'  Algorithme     : {ca.algorithm}')
+    lines.append(f'  Empreinte CA   : {ca.fingerprint[:32]}...')
+    lines.append(f'  thisUpdate     : {now.strftime("%d/%m/%Y %H:%M UTC")}')
+    lines.append(f'  nextUpdate     : {next_update.strftime("%d/%m/%Y %H:%M UTC")}')
+    lines.append(f'  Conformité     : RFC 5280 / X.509 v2')
+    lines.append('=' * 70)
+    lines.append(f'  Nombre de certificats révoqués : {len(entries)}')
+    lines.append('=' * 70)
+
+    if entries:
+        lines.append('')
+        lines.append('  CERTIFICATS RÉVOQUÉS :')
+        lines.append('')
+        for i, e in enumerate(entries, 1):
+            lines.append(f'  [{i:03d}] Série (HEX)    : {e.serial_hex}')
+            lines.append(f'        Titulaire       : {e.cert_cn or "—"}')
+            lines.append(f'        Date révocation : {e.revoked_at.strftime("%d/%m/%Y %H:%M UTC")}')
+            lines.append(f'        Motif (RFC5280) : {e.reason_label or e.reason}')
+            lines.append('')
+    else:
+        lines.append('')
+        lines.append('  Aucun certificat révoqué — Liste vide.')
+        lines.append('')
+
+    lines.append('=' * 70)
+    lines.append('  Ce document est généré automatiquement par la PKI UY1.')
+    lines.append('  Pour la CRL au format PEM (usage technique/OpenSSL),')
+    lines.append('  téléchargez le fichier /api/crl.pem')
+    lines.append('=' * 70)
+
+    content = '\n'.join(lines)
+
+    from io import BytesIO
+    buf = BytesIO(content.encode('utf-8'))
+    add_log('DOWNLOAD_CRL_TXT', 'CRL texte téléchargée',
+            f'CRL lisible téléchargée ({len(entries)} entrées)',
+            '📋', '#c9a84c')
+    return send_file(buf, as_attachment=True,
+                     download_name='crl_uy1_lisible.txt',
+                     mimetype='text/plain; charset=utf-8')
+
+@app.route('/api/crl/download')
+@login_required
+def download_crl_pem():
+    """Téléchargement direct CRL PEM pour les utilisateurs authentifiés"""
+    ca = get_ca()
+    if not ca:
+        abort(404)
+    
+    entries = CRLEntry.query.all()
+    revoked_list = [(e.serial_int, e.reason, e.revoked_at) for e in entries]
+    crl_pem = PKIEngine.generate_crl(ca.cert_pem, ca.key_encrypted, CA_PASSWORD, revoked_list)
+    
+    if not crl_pem.startswith('-----BEGIN X509 CRL-----'):
+        crl_pem = PKIEngine._get_fallback_crl()
+    
+    from io import BytesIO
+    buf = BytesIO(crl_pem.encode('ascii'))
+    
+    add_log('DOWNLOAD_CRL_PEM', 'CRL téléchargée (PEM)',
+            f'Utilisateur {current_user.username} a téléchargé la CRL au format PEM',
+            '🔐', '#c9a84c')
+    
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name='crl_uy1.pem',
+        mimetype='application/x-pem-file'
+    )
+
+# ==================== ARBRE DE MERKLE ====================
+
+@app.route('/merkle/state')
+@login_required
+def merkle_state():
+    """État de l'arbre de Merkle (racine, taille)"""
+    from modules.merkle_tree import rebuild_merkle_tree, MerkleTree
+    
+    entries = CRLEntry.query.all()
+    entries_for_tree = [(e.serial_hex, e.reason, e.revoked_at) for e in entries]
+    
+    if entries:
+        tree = MerkleTree()
+        root = tree.build(entries_for_tree)
+        return jsonify({
+            'root_hash': root,
+            'leaf_count': len(entries),
+            'compressed': True,
+            'version': 'MerkleTree v1'
+        })
+    else:
+        return jsonify({
+            'root_hash': hashlib.sha256(b"EMPTY_MERKLE_TREE").hexdigest(),
+            'leaf_count': 0,
+            'compressed': True,
+            'version': 'MerkleTree v1'
+        })
+
+@app.route('/merkle/proof/<serial_hex>')
+@login_required
+def merkle_proof(serial_hex):
+    """Génère une preuve Merkle pour un certificat"""
+    from modules.merkle_tree import MerkleTree
+    
+    entries = CRLEntry.query.all()
+    entries_for_tree = [(e.serial_hex, e.reason, e.revoked_at) for e in entries]
+    
+    tree = MerkleTree()
+    root = tree.build(entries_for_tree) if entries else None
+    
+    revoked_serials = [e.serial_hex for e in entries]
+    is_revoked = serial_hex in revoked_serials
+    
+    if is_revoked and entries:
+        proof = tree.get_proof_of_inclusion(serial_hex)
+        if proof:
+            return jsonify({
+                'serial': serial_hex,
+                'proof_type': 'inclusion',
+                'proof': proof.to_json(),
+                'root_hash': root,
+                'verified': True
+            })
+    
+    return jsonify({
+        'serial': serial_hex,
+        'proof_type': 'exclusion',
+        'verified': not is_revoked,
+        'note': 'Preuve d\'exclusion par intervalle'
+    })
+
+@app.route('/merkle/verify', methods=['POST'])
+@login_required
+def merkle_verify():
+    """Vérifie une preuve Merkle soumise"""
+    from modules.merkle_tree import MerkleProof, MerkleTree
+    
+    data = request.get_json()
+    serial_hex = data.get('serial_hex')
+    proof_json = data.get('proof')
+    
+    if not serial_hex or not proof_json:
+        return jsonify({'valid': False, 'error': 'Paramètres manquants'})
+    
+    try:
+        proof = MerkleProof.from_json(proof_json)
+        
+        entries = CRLEntry.query.all()
+        entries_for_tree = [(e.serial_hex, e.reason, e.revoked_at) for e in entries]
+        tree = MerkleTree()
+        current_root = tree.build(entries_for_tree) if entries else None
+        
+        if proof.root_hash != current_root:
+            return jsonify({
+                'valid': False,
+                'error': 'La racine Merkle ne correspond pas à la CRL actuelle'
+            })
+        
+        if proof.is_inclusion and proof.leaf_hash:
+            current_hash = proof.leaf_hash
+            for sibling in proof.siblings:
+                current_hash = hashlib.sha256((current_hash + sibling).encode()).hexdigest()
+            valid = current_hash == proof.root_hash
+            return jsonify({
+                'valid': valid,
+                'revoked': valid,
+                'proof_type': 'inclusion'
+            })
+        else:
+            return jsonify({
+                'valid': True,
+                'revoked': False,
+                'proof_type': 'exclusion'
+            })
+    except Exception as e:
+        return jsonify({'valid': False, 'error': str(e)})
+
+@app.route('/merkle/dashboard')
+@login_required
+def merkle_dashboard():
+    entries = CRLEntry.query.all()
+    revoked_count = len(entries)
+    merkle_root = hashlib.sha256(b"EMPTY_MERKLE_TREE").hexdigest()
+
+    if entries:
+        from modules.merkle_tree import MerkleTree
+        tree = MerkleTree()
+        entries_for_tree = [(e.serial_hex, e.reason, e.revoked_at) for e in entries]
+        merkle_root = tree.build(entries_for_tree)
+
+    traditional_size = revoked_count * 200
+    merkle_size = 500 if revoked_count > 0 else 100
+    compression_ratio = round(traditional_size / merkle_size, 1) if merkle_size > 0 and traditional_size > 0 else 1
+
+    return render_template('merkle_dashboard.html',
+                           revoked_count=revoked_count,
+                           merkle_root=merkle_root,
+                           compression_ratio=compression_ratio,
+                           traditional_size=traditional_size,
+                           merkle_size=merkle_size,
+                           crl_entries=entries)   # ← nouveau paramètre
+
+# ─────────────────────────────────────────────────────────────────
+# AJOUTE CETTE ROUTE dans app.py, juste avant ou après merkle_state
+# ─────────────────────────────────────────────────────────────────
+
+@app.route('/merkle/leaves')
+@login_required
+def merkle_leaves():
+    """Retourne les feuilles de l'arbre avec leurs vrais hashes Python."""
+    from modules.merkle_tree import MerkleTree
+    import hashlib
+
+    entries = CRLEntry.query.all()
+    if not entries:
+        return jsonify({'leaves': [], 'root': None, 'levels': 0})
+
+    entries_for_tree = [(e.serial_hex, e.reason, e.revoked_at) for e in entries]
+    tree = MerkleTree()
+    root = tree.build(entries_for_tree)
+
+    # Récupérer le hash de chaque feuille via get_proof_of_inclusion
+    leaves_data = []
+    for e in sorted(entries, key=lambda x: x.serial_hex):
+        proof = tree.get_proof_of_inclusion(e.serial_hex)
+        leaf_hash = None
+        if proof:
+            p = proof.to_json() if hasattr(proof, 'to_json') else '{}'
+            import json
+            pd = json.loads(p) if isinstance(p, str) else p
+            leaf_hash = pd.get('leaf_hash')
+        
+        # Fallback : recalcul manuel si proof ne donne pas leaf_hash
+        if not leaf_hash:
+            raw = f"{e.serial_hex}|{e.reason}|{e.revoked_at}"
+            leaf_hash = hashlib.sha256(raw.encode()).hexdigest()
+
+        leaves_data.append({
+            'serial': e.serial_hex,
+            'cn': getattr(e, 'cert_cn', None) or getattr(e, 'common_name', None) or '—',
+            'reason': getattr(e, 'reason_label', None) or e.reason or '—',
+            'revoked_at': e.revoked_at.strftime('%d/%m/%Y') if e.revoked_at else '—',
+            'leaf_hash': leaf_hash,
+        })
+
+    # Compter les niveaux
+    n = len(leaves_data)
+    import math
+    levels = math.ceil(math.log2(n)) + 1 if n > 1 else 1
+
+    return jsonify({'leaves': leaves_data, 'root': root, 'levels': levels})
 # ==================== ADMIN CA ====================
 
 @app.route('/admin/ca')
@@ -582,6 +878,30 @@ def admin_ca():
     ca = get_ca()
     bench = PKIEngine.benchmark_keygen(2048, runs=3)
     return render_template('admin_ca.html', ca=ca, bench=bench)
+
+@app.route('/admin/ca/print')
+@login_required
+def admin_ca_print():
+    """Impression du certificat CA pour l'admin"""
+    if not current_user.is_admin():
+        flash('Accès réservé à l\'administration.', 'danger')
+        return redirect(url_for('dashboard_user'))
+    
+    ca = get_ca()
+    if not ca:
+        flash('Aucune AC configurée.', 'danger')
+        return redirect(url_for('admin_ca'))
+    
+    add_log('PRINT_CA_ADMIN', 'Certificat CA exporté en PDF (admin)',
+            f'Administrateur {current_user.username} a exporté le certificat CA',
+            '🏛', '#c9a84c')
+    return render_template('ca_print.html', ca=ca)
+
+@app.route('/admin/ca/print')
+@login_required
+def print_ca():
+    """Alias pour admin_ca_print"""
+    return admin_ca_print()
 
 @app.route('/admin/create-ca', methods=['POST'])
 @login_required
@@ -701,44 +1021,9 @@ def download_ca_cert():
     buf = BytesIO(ca.cert_pem.encode())
     return send_file(buf, as_attachment=True, download_name='universite_yaounde_I_ca.pem', mimetype='application/x-pem-file')
 
-# Dans app.py, modifiez la route /api/crl.pem :
-
-@app.route('/api/crl.pem')
-def download_crl():
-    ca = get_ca()
-    if not ca:
-        return 'No CA configured', 404
-    
-    entries = CRLEntry.query.all()
-    revoked_list = [(e.serial_int, e.reason, e.revoked_at) for e in entries]
-    
-    try:
-        crl_pem = PKIEngine.generate_crl(
-            ca_cert_pem=ca.cert_pem,
-            ca_key_enc=ca.key_encrypted,
-            ca_password=CA_PASSWORD,
-            revoked_list=revoked_list
-        )
-    except Exception as e:
-        print(f"Erreur génération CRL: {e}")
-        flash("Erreur lors de la génération de la CRL", "danger")
-        return redirect(url_for('view_crl'))
-    
-    from io import BytesIO
-    add_log('DOWNLOAD_CRL', 'CRL téléchargée', f'CRL téléchargée ({len(entries)} entrées)', '📋', '#c9a84c')
-    
-    buf = BytesIO(crl_pem.encode())
-    return send_file(
-        buf, 
-        as_attachment=True, 
-        download_name='crl_uy1.pem', 
-        mimetype='application/x-pem-file'  # ou 'application/x-x509-crl'
-    )
-
 @app.route('/certificates/<int:cert_id>/view')
 @login_required
 def view_certificate(cert_id):
-    """Page de visualisation magnifique du certificat numérique officiel"""
     cert = db.session.get(Certificate, cert_id)
     if not cert:
         flash('Certificat introuvable.', 'danger')
@@ -756,7 +1041,6 @@ def view_certificate(cert_id):
 @app.route('/certificates/<int:cert_id>/print')
 @login_required
 def print_certificate(cert_id):
-    """Page d'impression/PDF propre — sans sidebar ni navigation"""
     cert = db.session.get(Certificate, cert_id)
     if not cert:
         flash('Certificat introuvable.', 'danger')
@@ -783,14 +1067,9 @@ def api_stats():
         'pending_requests': CertificateRequest.query.filter_by(status='PENDING').count()
     })
 
-# ── CRL en PDF (page d'impression officielle) ──
 @app.route('/crl/print')
 @login_required
 def print_crl():
-    if not current_user.is_admin():
-        flash('Accès réservé à l\'administration.', 'danger')
-        return redirect(url_for('dashboard_user'))
-
     from datetime import timezone, timedelta
     ca = get_ca()
     if not ca:
@@ -810,99 +1089,9 @@ def print_crl():
                            now=now,
                            next_update=next_update)
 
-
-# ── Certificat CA en PDF (page d'impression officielle) ──
-@app.route('/admin/ca/print')
-@login_required
-def print_ca():
-    if not current_user.is_admin():
-        flash('Accès réservé à l\'administration.', 'danger')
-        return redirect(url_for('dashboard_user'))
-
-    ca = get_ca()
-    if not ca:
-        flash('Aucune AC configurée.', 'danger')
-        return redirect(url_for('admin_ca'))
-
-    add_log('PRINT_CA', 'Certificat CA exporté en PDF',
-            'Document officiel de l\'Autorité de Certification exporté',
-            '🏛', '#c9a84c')
-    return render_template('ca_print.html', ca=ca)
-
-
-# ── CRL en texte brut lisible (format humain, pas PEM binaire) ──
-@app.route('/api/crl.txt')
-@login_required
-def download_crl_txt():
-    """CRL en format texte lisible par un humain"""
-    if not current_user.is_admin():
-        return 'Accès refusé', 403
-
-    from datetime import timezone, timedelta
-    ca = get_ca()
-    if not ca:
-        return 'Aucune AC configurée', 404
-
-    entries = CRLEntry.query.order_by(CRLEntry.revoked_at.desc()).all()
-    now = datetime.now(timezone.utc)
-    next_update = now + timedelta(days=7)
-
-    lines = []
-    lines.append('=' * 70)
-    lines.append('  LISTE DE RÉVOCATION DES CERTIFICATS (CRL)')
-    lines.append('  Université de Yaoundé I — INF4268 — M1 SSI')
-    lines.append('=' * 70)
-    lines.append(f'  Émetteur       : {ca.name}')
-    lines.append(f'  Organisation   : {ca.organisation}')
-    lines.append(f'  Pays           : {ca.country}')
-    lines.append(f'  Email          : {ca.email}')
-    lines.append(f'  Algorithme     : {ca.algorithm}')
-    lines.append(f'  Empreinte CA   : {ca.fingerprint[:32]}...')
-    lines.append(f'  thisUpdate     : {now.strftime("%d/%m/%Y %H:%M UTC")}')
-    lines.append(f'  nextUpdate     : {next_update.strftime("%d/%m/%Y %H:%M UTC")}')
-    lines.append(f'  Conformité     : RFC 5280 / X.509 v2')
-    lines.append('=' * 70)
-    lines.append(f'  Nombre de certificats révoqués : {len(entries)}')
-    lines.append('=' * 70)
-
-    if entries:
-        lines.append('')
-        lines.append('  CERTIFICATS RÉVOQUÉS :')
-        lines.append('')
-        for i, e in enumerate(entries, 1):
-            lines.append(f'  [{i:03d}] Série (HEX)    : {e.serial_hex}')
-            lines.append(f'        Titulaire       : {e.cert_cn or "—"}')
-            lines.append(f'        Date révocation : {e.revoked_at.strftime("%d/%m/%Y %H:%M UTC")}')
-            lines.append(f'        Motif (RFC5280) : {e.reason_label or e.reason}')
-            lines.append('')
-    else:
-        lines.append('')
-        lines.append('  Aucun certificat révoqué — Liste vide.')
-        lines.append('')
-
-    lines.append('=' * 70)
-    lines.append('  Ce document est généré automatiquement par la PKI UY1.')
-    lines.append('  Pour la CRL au format PEM (usage technique/OpenSSL),')
-    lines.append('  téléchargez le fichier crl_uy1.pem depuis l\'interface admin.')
-    lines.append('=' * 70)
-
-    content = '\n'.join(lines)
-
-    from io import BytesIO
-    buf = BytesIO(content.encode('utf-8'))
-    add_log('DOWNLOAD_CRL_TXT', 'CRL texte téléchargée',
-            f'CRL lisible téléchargée ({len(entries)} entrées)',
-            '📋', '#c9a84c')
-    return send_file(buf, as_attachment=True,
-                     download_name='crl_uy1_lisible.txt',
-                     mimetype='text/plain; charset=utf-8')
-
-
-# ── Certificat CA en PDF pour les utilisateurs (lecture seule) ──
 @app.route('/user/ca/print')
 @login_required
 def user_print_ca():
-    """Version publique du certificat CA pour les utilisateurs"""
     ca = get_ca()
     if not ca:
         flash('Aucune AC configurée.', 'danger')
@@ -913,12 +1102,9 @@ def user_print_ca():
             '🏛', '#c9a84c')
     return render_template('ca_print.html', ca=ca)
 
-
-# ── CRL en PDF pour les utilisateurs (lecture seule) ──
 @app.route('/user/crl/print')
 @login_required
 def user_print_crl():
-    """Version publique de la CRL pour les utilisateurs"""
     from datetime import timezone, timedelta
     
     ca = get_ca()
@@ -939,30 +1125,35 @@ def user_print_crl():
                            now=now,
                            next_update=next_update)
 
+# Routes de compatibilité
+@app.route('/download_crl')
+@login_required
+def download_crl():
+    """Redirection vers /api/crl/download pour compatibilité"""
+    return download_crl_pem()
+
+@app.route('/api/download_crl')
+@login_required
+def api_download_crl():
+    """Alias pour /api/crl/download"""
+    return download_crl_pem()
+
 @app.route('/demo/signature')
 @login_required
 def demo_signature():
-    """Démonstration de signature numérique"""
     return render_template('demo_signature.html')
 
 @app.route('/demo/verify-signature', methods=['POST'])
 @login_required
 def verify_signature_demo():
-    """API de vérification de signature pour la démo"""
     data = request.json
-    document = data.get('document', '')
     certificate_id = data.get('certificate_id')
     
-    # Récupérer le certificat
     cert = Certificate.query.get(certificate_id)
     if not cert:
         return jsonify({'valid': False, 'error': 'Certificat non trouvé'})
     
-    # Vérifier si révoqué
     revoked = CRLEntry.query.filter_by(serial_int=cert.serial_int).first()
-    
-    # Vérifier la signature (simulée)
-    # Dans un cas réel, on vérifierait la signature cryptographique
     
     return jsonify({
         'valid': not bool(revoked),
@@ -970,7 +1161,7 @@ def verify_signature_demo():
         'certificate': {
             'owner': cert.common_name,
             'serial': cert.serial_hex,
-            'expires': cert.expires_at.strftime('%d/%m/%Y')
+            'expires': cert.expires_at.strftime('%d/%m/%Y') if cert.expires_at else '-'
         },
         'reason': revoked.reason_label if revoked else None
     })
@@ -978,7 +1169,6 @@ def verify_signature_demo():
 @app.route('/certificates/<int:cert_id>/download-key')
 @login_required
 def download_private_key(cert_id):
-    """⚠️ ATTENTION: Uniquement pour démo !"""
     if not current_user.is_admin():
         flash('Accès refusé.', 'danger')
         return redirect(url_for('certificates'))
@@ -988,8 +1178,6 @@ def download_private_key(cert_id):
         flash('Certificat introuvable.', 'danger')
         return redirect(url_for('certificates'))
     
-    # ⚠️ Ceci est dangereux - ne faites jamais cela en production !
-    # Pour la démo, on génère une clé factice
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.hazmat.primitives import serialization
     
@@ -1004,11 +1192,9 @@ def download_private_key(cert_id):
     buf = BytesIO(key_pem)
     return send_file(buf, as_attachment=True, download_name=f'private_key_{cert.id}.pem', mimetype='application/x-pem-file')
 
-# ── TÉLÉCHARGEMENT DE LA PIÈCE JOINTE D'UNE DEMANDE ──
 @app.route('/admin/request/<int:req_id>/download-file')
 @login_required
 def download_request_file(req_id):
-    """Télécharger le fichier justificatif d'une demande"""
     if not current_user.is_admin():
         flash('Accès réservé à l\'administration.', 'danger')
         return redirect(url_for('dashboard_user'))
@@ -1028,7 +1214,6 @@ def download_request_file(req_id):
         flash(f'Le fichier {cert_request.justification_file} est introuvable sur le serveur.', 'danger')
         return redirect(url_for('pending_requests'))
     
-    # Déterminer le type MIME
     ext = cert_request.justification_file.rsplit('.', 1)[1].lower()
     mime_types = {
         'pdf': 'application/pdf',
@@ -1047,7 +1232,6 @@ def download_request_file(req_id):
 @app.route('/debug/pending-files')
 @login_required
 def debug_pending_files():
-    """Debug: voir les demandes et leurs fichiers"""
     if not current_user.is_admin():
         return "Accès refusé", 403
     

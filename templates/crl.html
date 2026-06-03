@@ -9,63 +9,58 @@
       <span class="dot dot-red"></span>
       CERTIFICATS RÉVOQUÉS ({{ crl_entries|length }})
     </div>
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <!-- Bouton PDF officiel -->
-      <a href="{{ url_for('print_crl') }}"
-         target="_blank"
-         class="btn btn-sm"
-         style="background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.06));
-                border:1px solid rgba(201,168,76,0.35); color:#c9a84c;
-                font-family:'JetBrains Mono',monospace; font-size:0.62rem;
-                padding:6px 12px; border-radius:8px; text-decoration:none;
-                display:inline-flex; align-items:center; gap:5px;"
-         title="Voir et télécharger la CRL en PDF officiel">
+    <!-- Barre de téléchargement pour TOUS les utilisateurs -->
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <a href="{{ url_for('download_crl_pem') }}" class="btn btn-sm" style="background: linear-gradient(135deg, #8a6a1a, #c9a84c); color: #03071e; font-family:'JetBrains Mono',monospace; font-size:0.62rem; padding:6px 12px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+        🔐 Télécharger CRL (PEM / OpenSSL)
+      </a>
+      <a href="{{ url_for('download_crl_txt') }}" class="btn btn-sm" style="border:1px solid var(--cyan); background:transparent; color: var(--cyan); font-family:'JetBrains Mono',monospace; font-size:0.62rem; padding:6px 12px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+        📋 Télécharger CRL (TXT lisible)
+      </a>
+      {% if current_user.is_admin() %}
+      <a href="{{ url_for('print_crl') }}" target="_blank" class="btn btn-sm" style="background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3); color:#00d4ff; font-family:'JetBrains Mono',monospace; font-size:0.62rem; padding:6px 12px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+        🖨 PDF Officiel (admin)
+      </a>
+      {% else %}
+      <a href="{{ url_for('user_print_crl') }}" target="_blank" class="btn btn-sm" style="background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3); color:#00d4ff; font-family:'JetBrains Mono',monospace; font-size:0.62rem; padding:6px 12px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
         🖨 PDF Officiel
       </a>
-      <!-- Bouton texte lisible -->
-      <a href="{{ url_for('download_crl_txt') }}"
-         class="btn btn-sm"
-         style="background:rgba(0,212,255,0.08); border:1px solid rgba(0,212,255,0.25);
-                color:#00d4ff; font-family:'JetBrains Mono',monospace; font-size:0.62rem;
-                padding:6px 12px; border-radius:8px; text-decoration:none;
-                display:inline-flex; align-items:center; gap:5px;"
-         title="Télécharger la CRL en texte lisible">
-        📄 Texte lisible
-      </a>
-      <!-- Bouton PEM technique -->
-      <a href="{{ url_for('download_crl') }}"
-         class="btn btn-outline btn-sm"
-         title="Télécharger la CRL au format PEM (usage OpenSSL)"
-         style="font-family:'JetBrains Mono',monospace; font-size:0.62rem;
-                padding:6px 12px; border-radius:8px; display:inline-flex;
-                align-items:center; gap:5px;">
-        🔐 PEM (OpenSSL)
-      </a>
+      {% endif %}
     </div>
   </div>
   <div class="card-body">
     {% if crl_entries %}
     <div class="table-wrap">
-      <table>
+      <table class="data-table">
         <thead>
           <tr>
-            <th>Certificat</th>
-            <th>Série</th>
-            <th>Motif</th>
+            <th>#</th>
+            <th>Série (HEX)</th>
+            <th>Titulaire</th>
             <th>Date de révocation</th>
+            <th>Motif</th>
           </tr>
         </thead>
         <tbody>
           {% for entry in crl_entries %}
           <tr>
-            <td><strong>{{ entry.cert_cn }}</strong></td>
-            <td class="mono">{{ entry.serial_hex }}</td>
-            <td><span class="badge badge-revoked">{{ entry.reason_label }}</span></td>
-            <td>{{ entry.revoked_at.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td style="font-family: monospace; color: var(--muted);">{{ loop.index }}</td>
+            <td class="mono" style="color: var(--red);">{{ entry.serial_hex }}</td>
+            <td>{{ entry.cert_cn or '—' }}</td>
+            <td class="mono">{{ entry.revoked_at.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td><span class="badge badge-revoked">{{ entry.reason_label or entry.reason }}</span></td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
+    </div>
+    
+    <!-- Info OpenSSL pour utilisateurs techniques -->
+    <div style="margin-top: 20px; padding: 16px; background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.15); border-radius: 8px;">
+      <strong style="color: var(--cyan);">🔐 Utilisation avec OpenSSL</strong><br>
+      <code style="background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 6px; display: inline-block; margin-top: 8px; font-family: monospace; font-size: 0.7rem;">
+        openssl crl -in crl_uy1.pem -text -noout
+      </code>
     </div>
     {% else %}
     <div class="empty-state" style="text-align: center; padding: 60px;">

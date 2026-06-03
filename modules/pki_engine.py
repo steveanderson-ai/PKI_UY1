@@ -294,7 +294,6 @@ AAAAAAAAAAAAAAAAAA==
         # Étape 3 : CRL
         serial = cert.serial_number
         revoked = serial in revoked_serials
-        # Chercher la raison si révoqué
         revoke_detail = 'Non présent dans la Liste de Révocation (CRL) — Certificat non révoqué'
         if revoked:
             revoke_detail = '⚠ Numéro de série présent dans la CRL — Certificat révoqué avant expiration'
@@ -356,11 +355,9 @@ AAAAAAAAAAAAAAAAAA==
         cn_list = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
         subject_cn = cn_list[0].value if cn_list else 'Inconnu'
 
-        # Empreinte SHA-256
         raw_fp = cert.fingerprint(hashes.SHA256()).hex().upper()
         fingerprint = ':'.join(raw_fp[i:i+2] for i in range(0, len(raw_fp), 2))
 
-        # Issuer
         issuer_cn_list = cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)
         issuer_cn = issuer_cn_list[0].value if issuer_cn_list else 'Inconnu'
 
@@ -385,10 +382,8 @@ AAAAAAAAAAAAAAAAAA==
         Même logique que verify_certificate mais le certificat vient de l'extérieur.
         Returns: même structure de dict que verify_certificate
         """
-        # Nettoyage du PEM collé par l'utilisateur
         cert_pem_clean = cert_pem_input.strip()
 
-        # Vérification que c'est bien un PEM de certificat
         if '-----BEGIN CERTIFICATE-----' not in cert_pem_clean:
             return {
                 'valid': False,
@@ -402,7 +397,6 @@ AAAAAAAAAAAAAAAAAA==
                 'error': 'Format PEM invalide'
             }
 
-        # On réutilise la même logique de vérification
         return PKIEngine.verify_certificate(cert_pem_clean, ca_cert_pem, revoked_serials)
 
     @staticmethod

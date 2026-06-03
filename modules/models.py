@@ -195,3 +195,36 @@ class AuditLog(db.Model):
     username   = db.Column(db.String(64), default='')
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ==================== MODÈLES POUR ARBRE DE MERKLE ====================
+
+class MerkleState(db.Model):
+    """État persistant de l'arbre de Merkle pour la CRL compressée"""
+    __tablename__ = 'merkle_state'
+    id            = db.Column(db.Integer, primary_key=True)
+    root_hash     = db.Column(db.String(128), nullable=False, default='')
+    leaves_json   = db.Column(db.Text, default='[]')      # Stockage JSON des feuilles
+    leaf_count    = db.Column(db.Integer, default=0)
+    last_update   = db.Column(db.DateTime, default=datetime.utcnow)
+    version       = db.Column(db.Integer, default=1)
+    
+    def to_dict(self):
+        return {
+            'root_hash': self.root_hash,
+            'leaf_count': self.leaf_count,
+            'last_update': self.last_update.isoformat() if self.last_update else None,
+            'version': self.version
+        }
+
+
+class MerkleProofLog(db.Model):
+    """Journal des preuves Merkle générées (audit)"""
+    __tablename__ = 'merkle_proof_logs'
+    id            = db.Column(db.Integer, primary_key=True)
+    serial_hex    = db.Column(db.String(64), nullable=False)
+    proof_type    = db.Column(db.String(20), default='inclusion')  # inclusion / exclusion
+    proof_json    = db.Column(db.Text, nullable=False)
+    requested_by  = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    requested_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    verified      = db.Column(db.Boolean, default=False)
